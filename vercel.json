@@ -1,0 +1,20 @@
+{
+  "version": 2,
+  "public": true,
+  "builds": [
+    { "src": "index.html", "use": "@vercel/static" },
+    { "src": "style.css", "use": "@vercel/static" },
+    { "src": "game.js", "use": "@vercel/static" },
+    { "src": "public/**/*", "use": "@vercel/static" }
+  ],
+  "routes": [
+    { "src": "/game.js", "dest": "/game.js" },
+    { "src": "/style.css", "dest": "/style.css" },
+    {
+      "src": "/\\.well-known/farcaster\\.json",
+      "status": 307,
+      "headers": { "Location": "https://api.farcaster.xyz/miniapps/hosted-manifest/019a0897-63a5-0085-9234-e5275de2b2f9" }
+    },
+    { "src": "/(.*)", "dest": "/index.html" }
+  ]
+}
