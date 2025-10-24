@@ -2,18 +2,18 @@
   "frame": {
     "version": "1",
     "name": "Solitaire MiniApp",
-    "iconUrl": "https://solitaire-game.vercel.app/icon.png",
-    "homeUrl": "https://solitaire-game.vercel.app/",
-    "imageUrl": "https://solitaire-game.vercel.app/splash-200.png",
-    "splashImageUrl": "https://solitaire-game.vercel.app/splash-200.png",
+    "iconUrl": "https://solitaire-game-chi-gules.vercel.app/icon.png",
+    "homeUrl": "https://solitaire-game-chi-gules.vercel.app/",
+    "imageUrl": "https://solitaire-game-chi-gules.vercel.app/splash-200.png",
+    "splashImageUrl": "https://solitaire-game-chi-gules.vercel.app/splash-200.png",
     "splashBackgroundColor": "#043011",
     "button": {
       "title": "Play Solitaire",
       "action": {
         "type": "launch_frame",
         "name": "Solitaire",
-        "url": "https://solitaire-game.vercel.app/",
-        "splashImageUrl": "https://solitaire-game.vercel.app/splash-200.png",
+        "url": "https://solitaire-game-chi-gules.vercel.app/",
+        "splashImageUrl": "https://solitaire-game-chi-gules.vercel.app/splash-200.png",
         "splashBackgroundColor": "#0A5323"
       }
     }
