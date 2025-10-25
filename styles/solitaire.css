@@ -99,6 +99,13 @@ body {
   transform: translateZ(0);
 }
 
+@media (max-width: 480px) {
+  .game-container {
+    transform: none;            /* güvenli: clipping yok */
+  }
+}
+
+
 .game-container.active {
   opacity: 1;
 }
@@ -170,9 +177,9 @@ h1 {
   gap: var(--gap);
   padding: 0 var(--gap);
   box-sizing: border-box;
-  min-height: calc(var(--card-height) * 1.6);
+  min-height: calc(var(--card-height) + var(--stack-gap) * 10);
   flex-wrap: nowrap;
-  overflow: hidden;
+  overflow: visible;
 }
 
 .pile {
