@@ -179,7 +179,7 @@ h1 {
   box-sizing: border-box;
   min-height: calc(var(--card-height) + var(--stack-gap) * 10);
   flex-wrap: nowrap;
-  overflow: visible;
+  overflow: hidden;
 }
 
 .pile {
@@ -225,11 +225,6 @@ h1 {
   -webkit-tap-highlight-color: transparent;
 }
 
-.tableau .card {
-  top: calc(var(--stack-index, 0) * var(--stack-gap));
-  z-index: calc(var(--stack-index, 0) + 1);
-}
-
 .card.face-down {
   background-image: linear-gradient(45deg, #1d4ed8 25%, transparent 25%),
   linear-gradient(-45deg, #1d4ed8 25%, transparent 25%),
@@ -249,14 +244,10 @@ h1 {
 .card.red { color: var(--red-suit); }
 .card.black { color: var(--black-suit); }
 
-.rank {
-  font-size: 1.1rem;
+.rank, .suit {
+  font-size: clamp(1.2rem, 2.5vw, 1.5rem);
   font-weight: 700;
-}
-
-.suit {
-  font-size: 1.1rem;
-  align-self: flex-end;
+  line-height: 1.1;
 }
 
 .tableau .card {
