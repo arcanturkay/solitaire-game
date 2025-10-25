@@ -269,9 +269,9 @@ h1 {
   display: flex;
   justify-content: center;
   align-items: center;
-  gap: 12px;
-  margin-top: 24px;
-  padding-bottom: env(safe-area-inset-bottom, 10px);
+  gap: 14px;
+  margin-top: 40px; /* ⬆️ Arttırıldı: kartlarla arayı açar */
+  padding-bottom: calc(env(safe-area-inset-bottom, 10px) + 40px); /* ⬇️ Alta ekstra 40px boşluk */
   width: 94%;
   max-width: 400px;
   margin-inline: auto;
@@ -297,27 +297,28 @@ h1 {
   font-size: 1rem;
   font-weight: 700;
   cursor: pointer;
-  transition: background-color 0.2s;
+  transition: background-color 0.2s, transform 0.1s ease;
   text-align: center;
 }
 
-.control-btn:hover,
-.new-game-btn:hover {
+.control-btn:active,
+.new-game-btn:active {
+  transform: scale(0.95);
   background-color: var(--dark-blue-hover);
 }
 
 @media (max-width: 600px) {
   .controls {
     flex-wrap: wrap;
-    gap: 10px;
-    margin-bottom: 5vh;
+    gap: 12px;
+    margin-bottom: 7vh;
   }
 
   .control-btn,
   .new-game-btn {
     flex: 1 1 45%;
     max-width: 45%;
-    padding: 12px 0;
+    padding: 14px 0;
   }
 }
 
