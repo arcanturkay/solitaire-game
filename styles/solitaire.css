@@ -397,28 +397,63 @@ h1 {
   text-align: center;
 }
 
-@media (max-width: 530px) {
+@media (max-width: 600px) {
   :root {
-    --card-width: 13vw;
-    --card-height: 19vw;
-    --stack-gap: 40px;
+    --card-width: 13vw;      /* kart genişliği biraz artar → dokunma kolaylığı */
+    --card-height: 18.5vw;   /* orantılı yükseklik */
+    --stack-gap: 36px;       /* düşey aralık dengeli (ne çok sıkı ne çok gevşek) */
+  }
+
+  body, html {
+    height: 100%;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .game-container {
+    transform: scale(0.92);               /* tüm alanı sığdır */
+    transform-origin: top center;
+    padding-bottom: 40px;                 /* butonlar için ek boşluk */
   }
 
   .tableau-piles {
-    transform: scale(0.94);
-    transform-origin: top center;
+    justify-content: center;
+    gap: 1vw;
+    padding: 0 3vw;
+    overflow: visible;                    /* alt kartlar görünür kalsın */
   }
 
-  .controls {
-    margin-top: 24px;
-    padding-bottom: 20px;
+  .pile.tableau {
+    flex: 0 0 auto;
+    min-height: calc(var(--card-height) + var(--stack-gap) * 8);
   }
 
   h1 {
-    font-size: 1.4rem;
+    font-size: 1.6rem;
+    margin-top: 4px;
   }
 
   .score-display {
+    font-size: 1rem;
+    padding: 6px 16px;
+  }
+
+  #current-player-status {
+    font-size: 0.9rem;
+  }
+
+  .controls {
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 20px;
+    padding-bottom: 12px;
+  }
+
+  .new-game-btn,
+  .control-btn {
+    flex: 1 1 46%;
+    max-width: 46%;
+    padding: 11px 0;
     font-size: 0.9rem;
   }
 }
