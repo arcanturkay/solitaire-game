@@ -3,7 +3,7 @@
   --card-height: 135px;
   --gap: 12px;
   --border-radius: 10px;
-  --stack-gap: 40px;
+  --stack-gap: 30px;
   --main-green: #0A5323;
   --dark-green: #08401B;
   --light-text: #FFFFFF;
@@ -18,10 +18,10 @@
 /* 📱 Mobil & Farcaster WebView için optimize */
 @media (max-width: 600px) {
   :root {
-    --card-width: 13vw;
-    --card-height: 17.5vw;
-    --gap: 0.8vw;
-    --stack-gap: 27px;
+    --card-width: 17vw;
+    --card-height: 20vw;
+    --gap: 0.10vw;
+    --stack-gap: 40px;
   }
 
   html, body {
