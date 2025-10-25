@@ -396,22 +396,3 @@ h1 {
 #leaderboard-table td:last-child {
   text-align: center;
 }
-
-  .tableau-piles {
-    transform: scale(0.92);
-    transform-origin: top center;
-  }
-
-  .controls {
-    margin-top: 24px;
-    padding-bottom: 20px;
-  }
-
-  h1 {
-    font-size: 1.4rem;
-  }
-
-  .score-display {
-    font-size: 0.9rem;
-  }
-}
