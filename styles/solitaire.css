@@ -16,18 +16,18 @@
 /* 📱 Mobil & Farcaster WebView için optimize */
 @media (max-width: 600px) {
   :root {
-    --card-width: 13vw;         /* ✅ 14vw → 13vw ile 7 sütun tam hizalanır */
-    --card-height: 17.5vw;      /* oran korundu */
-    --gap: 0.8vw;               /* aralık azaltıldı */
+    --card-width: 13vw;
+    --card-height: 17.5vw;
+    --gap: 0.8vw;
   }
 
   html, body {
     height: 100%;
-    overflow: hidden;           /* WebView kaymasını engeller */
+    overflow: hidden;
   }
 
   .tableau .card {
-    margin-bottom: -58px !important; /* daha sıkı dizilim */
+    margin-bottom: -58px !important;
   }
 
   .tableau .card.face-up {
@@ -71,7 +71,7 @@ body {
   flex-direction: column;
   align-items: center;
   justify-content: flex-start;
-  min-height: 100dvh; /* ✅ Safari WebView için 100vh yerine 100dvh */
+  min-height: 100dvh;
   padding: 20px 0;
   margin: 0;
   user-select: none;
@@ -264,12 +264,16 @@ h1 {
   z-index: 999;
 }
 
+/* === 🎯 Alt buton hizalama fix === */
 .controls {
   display: flex;
-  gap: 10px;
-  margin-top: 20px;
-  align-items: center;
   justify-content: center;
+  align-items: center;
+  gap: 12px;
+  margin-top: 24px;
+  padding-bottom: env(safe-area-inset-bottom, 10px);
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .control-btn,
@@ -277,12 +281,14 @@ h1 {
   background-color: var(--dark-blue);
   color: var(--light-text);
   border: none;
-  padding: 12px 24px;
+  min-width: 140px;
+  padding: 12px 20px;
   border-radius: var(--border-radius);
   font-size: 1rem;
   font-weight: 700;
   cursor: pointer;
   transition: background-color 0.2s;
+  text-align: center;
 }
 
 .control-btn:hover,
@@ -290,6 +296,23 @@ h1 {
   background-color: var(--dark-blue-hover);
 }
 
+/* 📱 Mobilde buton hizalaması */
+@media (max-width: 600px) {
+  .controls {
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-bottom: 5vh;
+  }
+
+  .control-btn,
+  .new-game-btn {
+    flex: 1 1 45%;
+    max-width: 45%;
+    padding: 12px 0;
+  }
+}
+
+/* === Modal ve tablo === */
 .modal-overlay {
   position: fixed;
   top: 0;
