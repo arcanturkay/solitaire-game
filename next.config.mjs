@@ -1,3 +1,4 @@
+/** @type {import('next').NextConfig} */
 const nextConfig = {
     reactStrictMode: true,
     async headers() {
@@ -6,10 +7,11 @@ const nextConfig = {
                 source: '/.well-known/farcaster.json',
                 headers: [
                     { key: 'Content-Type', value: 'application/json' },
+                    { key: 'Cache-Control', value: 'public, max-age=600' },
                 ],
             },
         ]
     },
-};
+}
 
-module.exports = nextConfig;
+export default nextConfig
