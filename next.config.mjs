@@ -1,6 +1,8 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
     reactStrictMode: true,
+
+    // 🔑 Bu kısım JSON'un doğru Content-Type ile servis edilmesini garanti eder
     async headers() {
         return [
             {
@@ -10,8 +12,11 @@ const nextConfig = {
                     { key: 'Cache-Control', value: 'public, max-age=600' },
                 ],
             },
-        ]
+        ];
     },
-}
 
-export default nextConfig
+    // 🔧 Bazı ortamlarda public klasör erişimini garanti altına alır
+    output: 'standalone',
+};
+
+export default nextConfig;
