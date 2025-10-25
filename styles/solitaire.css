@@ -397,12 +397,6 @@ h1 {
   text-align: center;
 }
 
-@media (max-width: 430px) {
-  :root {
-    --card-width: 11.5vw;
-    --card-height: 16vw;
-  }
-
   .tableau-piles {
     transform: scale(0.92);
     transform-origin: top center;
