@@ -127,23 +127,30 @@ export default function SolitaireGame({ playerId }: { playerId: string }) {
         function dealCards() {
             for (let i = 0; i < 7; i++) {
                 const pileCards: Card[] = [];
+
+                // i. sütuna i+1 kart çek
                 for (let j = 0; j <= i; j++) {
                     const cardData = deck.pop();
                     if (cardData) pileCards.push(cardData);
                 }
+
+                // en üstteki kartı açık yap
                 if (pileCards.length > 0)
                     pileCards[pileCards.length - 1].isFaceUp = true;
 
-                pileCards.forEach((cardData, index) => {
+                // ✅ alttan üste doğru appendChild yap
+                pileCards.forEach((cardData, j) => {
                     const cardElement = createCardElement(cardData);
 
-                    // ✅ stacking index CSS değişkeni olarak ekleniyor
-                    cardElement.style.setProperty('--stack-index', index.toString());
+                    // 🔹 stack-index'i alttan başlayarak veriyoruz
+                    cardElement.style.setProperty('--stack-index', j.toString());
 
+                    // kartları sırayla ekle
                     (tableauPiles[i] as HTMLElement).appendChild(cardElement);
                 });
             }
 
+            // ✅ kalan kartları stoğa ekle
             for (const cardData of deck) {
                 const cardElement = createCardElement(cardData);
                 stockPile!.appendChild(cardElement);
