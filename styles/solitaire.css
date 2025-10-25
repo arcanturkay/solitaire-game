@@ -1,8 +1,9 @@
 :root {
-  --card-width: 80px;
-  --card-height: 112px;
-  --gap: 10px;
-  --border-radius: 8px;
+  --card-width: 95px;
+  --card-height: 135px;
+  --gap: 12px;
+  --border-radius: 10px;
+  --stack-gap: 29px;
   --main-green: #0A5323;
   --dark-green: #08401B;
   --light-text: #FFFFFF;
@@ -11,6 +12,7 @@
   --red-suit: #D92D20;
   --black-suit: #1D2939;
   --selected-outline: #FDB022;
+
 }
 
 /* 📱 Mobil & Farcaster WebView için optimize */
@@ -19,6 +21,7 @@
     --card-width: 13vw;
     --card-height: 17.5vw;
     --gap: 0.8vw;
+    --stack-gap: 26px;
   }
 
   html, body {
