@@ -272,8 +272,17 @@ h1 {
   gap: 12px;
   margin-top: 24px;
   padding-bottom: env(safe-area-inset-bottom, 10px);
-  width: 100%;
+  width: 94%;
+  max-width: 400px;
+  margin-inline: auto;
   box-sizing: border-box;
+}
+
+/* ✅ Warpcast içi optik hizalama */
+@supports (-webkit-touch-callout: none) {
+  .controls {
+    transform: translateX(3px);
+  }
 }
 
 .control-btn,
@@ -281,6 +290,7 @@ h1 {
   background-color: var(--dark-blue);
   color: var(--light-text);
   border: none;
+  flex: 1;
   min-width: 140px;
   padding: 12px 20px;
   border-radius: var(--border-radius);
@@ -296,7 +306,6 @@ h1 {
   background-color: var(--dark-blue-hover);
 }
 
-/* 📱 Mobilde buton hizalaması */
 @media (max-width: 600px) {
   .controls {
     flex-wrap: wrap;
@@ -312,7 +321,6 @@ h1 {
   }
 }
 
-/* === Modal ve tablo === */
 .modal-overlay {
   position: fixed;
   top: 0;
