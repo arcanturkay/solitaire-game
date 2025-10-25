@@ -76,6 +76,7 @@ body {
   margin: 0;
   user-select: none;
   overflow-x: hidden;
+  overflow-y: auto; /* ✅ taşmayı dikeyde izin ver */
   -webkit-text-size-adjust: 100%;
   touch-action: manipulation;
 }
@@ -90,6 +91,14 @@ body {
   opacity: 0;
   transition: opacity 0.5s;
   transform: translateZ(0);
+  padding-bottom: 80px; /* ✅ alt boşluk genişletildi */
+  overflow-y: visible;
+  }
+@media (max-width: 480px) {
+  .game-container {
+    transform: scale(0.9);
+    transform-origin: top center;
+  }
 }
 
 .game-container.active {
@@ -163,9 +172,10 @@ h1 {
   gap: var(--gap);
   padding: 0 var(--gap);
   box-sizing: border-box;
-  min-height: calc(var(--card-height) * 1.6);
+  min-height: calc(var(--card-height) * 2);
   flex-wrap: nowrap;
-  overflow: hidden;
+  overflow-x: hidden;
+  overflow-y: visible; /* ✅ alt kartlar görünür kalsın */
 }
 
 .pile {
