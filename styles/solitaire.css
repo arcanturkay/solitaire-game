@@ -250,6 +250,12 @@ h1 {
   line-height: 1.1;
 }
 
+@media (max-width: 480px) {
+  .rank, .suit {
+    font-size: clamp(1.2rem, 3vw, 1.6rem);
+  }
+}
+
 .tableau .card {
   top: auto;
   position: relative;
