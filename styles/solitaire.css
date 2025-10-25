@@ -11,6 +11,9 @@
   --red-suit: #D92D20;
   --black-suit: #1D2939;
   --selected-outline: #FDB022;
+
+  /* yeni: tableau düşey aralığı */
+  --stack-gap: 30px;
 }
 
 /* 📱 Mobil & Farcaster WebView için optimize */
@@ -19,21 +22,14 @@
     --card-width: 13vw;
     --card-height: 17.5vw;
     --gap: 0.8vw;
+    --stack-gap: 24px; /* mobilde aralık biraz daha sık */
   }
 
   html, body {
     height: 100%;
     overflow-x: hidden;
-    overflow-y: auto; /* ✅ Kartlar uzadığında dikey kaydırma aktif */
-    -webkit-overflow-scrolling: touch; /* ✅ mobil scroll pürüzsüz */
-  }
-
-  .tableau .card {
-    margin-bottom: -58px !important;
-  }
-
-  .tableau .card.face-up {
-    margin-bottom: -52px !important;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
   }
 
   .tableau-piles {
@@ -44,25 +40,13 @@
     flex-wrap: nowrap;
   }
 
-  .pile.tableau {
-    flex: 0 0 auto;
-  }
+  .pile.tableau { flex: 0 0 auto; }
 
-  .foundation-piles {
-    justify-content: flex-end;
-  }
+  .foundation-piles { justify-content: flex-end; }
+  .top-piles { justify-content: space-between; }
 
-  .top-piles {
-    justify-content: space-between;
-  }
-
-  .game-container {
-    padding-bottom: 30px;
-  }
-
-  h1 {
-    font-size: 1.8rem;
-  }
+  .game-container { padding-bottom: 30px; }
+  h1 { font-size: 1.8rem; }
 }
 
 body {
@@ -78,7 +62,7 @@ body {
   margin: 0;
   user-select: none;
   overflow-x: hidden;
-  overflow-y: auto; /* ✅ taşmayı dikeyde izin ver */
+  overflow-y: auto;
   -webkit-text-size-adjust: 100%;
   touch-action: manipulation;
 }
@@ -91,50 +75,19 @@ body {
   width: 100%;
   max-width: 800px;
   opacity: 0;
-  transition: opacity 0.5s;
-  transform: translateZ(0);
-  padding-bottom: 80px; /* ✅ alt boşluk genişletildi */
+  transition: opacity 0.5s ease;
+  /* translateZ/scale gibi transformlar Safari/Farcaster'da clipping yapabiliyor */
+  padding-bottom: 80px;
   overflow-y: visible;
-  }
+}
+
 @media (max-width: 480px) {
   .game-container {
-    transform: scale(0.95);  /* ✅ azıcık daha doğal görünüm */
-    transform-origin: top center;
+    transform: none;            /* güvenli: clipping yok */
   }
 }
 
-.game-container.active {
-  opacity: 1;
-}
-
-#farcaster-wall {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background-color: var(--dark-green);
-  color: var(--light-text);
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  z-index: 3000;
-  text-align: center;
-  padding: 20px;
-  gap: 20px;
-}
-
-.hidden { display: none !important; }
-
-#farcaster-wall h2 {
-  font-size: 2rem;
-  margin-bottom: 10px;
-}
-
-#farcaster-wall p {
-  font-size: 1.1rem;
-}
+.game-container.active { opacity: 1; }
 
 h1 {
   font-size: 2.5rem;
@@ -174,12 +127,13 @@ h1 {
   gap: var(--gap);
   padding: 0 var(--gap);
   box-sizing: border-box;
-  min-height: calc(var(--card-height) * 2);
+  /* sütunlar görünür kalacak kadar yüksek bir alan */
+  min-height: calc(var(--card-height) + var(--stack-gap) * 10);
   flex-wrap: nowrap;
-  overflow-x: visible;
-  overflow-y: visible; /* ✅ alt kartlar görünür kalsın */
+  overflow: visible; /* hem x hem y görünür */
 }
 
+/* her destenin kendi içerisine mutlak konumlama yapabilmesi için */
 .pile {
   width: var(--card-width);
   height: var(--card-height);
@@ -187,7 +141,10 @@ h1 {
 }
 
 .pile.tableau {
+  position: relative;
   height: auto;
+  min-height: calc(var(--card-height) + var(--stack-gap) * 10);
+  overflow: visible;
 }
 
 .pile-placeholder {
@@ -198,9 +155,7 @@ h1 {
   box-sizing: border-box;
 }
 
-#stock .pile-placeholder {
-  cursor: pointer;
-}
+#stock .pile-placeholder { cursor: pointer; }
 
 .card {
   width: var(--card-width);
@@ -209,7 +164,7 @@ h1 {
   border: 1px solid #CCC;
   border-radius: var(--border-radius);
   box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-  position: absolute;
+  position: absolute;      /* 🔑 */
   top: 0;
   left: 0;
   display: flex;
@@ -218,9 +173,19 @@ h1 {
   padding: 6px 5px;
   box-sizing: border-box;
   cursor: pointer;
-  transition: transform 0.2s ease, opacity 0.2s ease;
+  transition: transform 0.2s ease, opacity 0.2s ease, top 0.2s ease;
   touch-action: manipulation;
   -webkit-tap-highlight-color: transparent;
+}
+
+/* tableau’da stacking: JS’te verilen --stack-index’e göre yerleştir */
+.tableau .card {
+  top: calc(var(--stack-index, 0) * var(--stack-gap));
+  z-index: calc(var(--stack-index, 0) + 1);
+}
+
+.tableau .card.face-up {
+  z-index: calc(var(--stack-index, 0) + 10);
 }
 
 .card.face-down {
@@ -235,46 +200,25 @@ h1 {
 }
 
 .card.face-down .rank,
-.card.face-down .suit {
-  display: none;
-}
+.card.face-down .suit { display: none; }
 
 .card.red { color: var(--red-suit); }
 .card.black { color: var(--black-suit); }
 
-.rank,
-.suit {
+.rank, .suit {
   font-size: clamp(1.2rem, 2.5vw, 1.5rem);
   font-weight: 700;
   line-height: 1.1;
 }
 
 @media (max-width: 480px) {
-  .rank,
-  .suit {
-    font-size: clamp(1.3rem, 3vw, 1.6rem);
+  .rank, .suit {
+    font-size: clamp(1.2rem, 3vw, 1.6rem);
   }
 }
 
-.tableau .card {
-  top: auto;
-  position: relative;
-  z-index: 1;
-  margin-bottom: -70px;
-}
-
-.tableau .card.face-up {
-  margin-bottom: -80px;
-  z-index: 2;
-}
-
-.tableau .card:last-child {
-  margin-bottom: 0;
-}
-
-#waste .card:not(:last-child) {
-  pointer-events: none;
-}
+/* waste: en üst dışındakiler tıklanmasın */
+#waste .card:not(:last-child) { pointer-events: none; }
 
 .card.dragging {
   opacity: 0.5;
@@ -282,7 +226,7 @@ h1 {
   z-index: 999 !important;
 }
 
-/* === 🎯 Alt buton hizalama fix === */
+/* === 🎯 Alt buton hizalama === */
 .controls {
   display: flex;
   justify-content: center;
@@ -296,11 +240,8 @@ h1 {
   box-sizing: border-box;
 }
 
-/* ✅ Warpcast içi optik hizalama */
 @supports (-webkit-touch-callout: none) {
-  .controls {
-    transform: translateX(3px);
-  }
+  .controls { transform: translateX(3px); }
 }
 
 .control-btn,
@@ -320,9 +261,7 @@ h1 {
 }
 
 .control-btn:hover,
-.new-game-btn:hover {
-  background-color: var(--dark-blue-hover);
-}
+.new-game-btn:hover { background-color: var(--dark-blue-hover); }
 
 @media (max-width: 600px) {
   .controls {
@@ -330,7 +269,6 @@ h1 {
     gap: 10px;
     margin-bottom: 5vh;
   }
-
   .control-btn,
   .new-game-btn {
     flex: 1 1 45%;
@@ -339,6 +277,7 @@ h1 {
   }
 }
 
+/* === Modal === */
 .modal-overlay {
   position: fixed;
   top: 0;
@@ -356,10 +295,7 @@ h1 {
   transition: opacity 0.3s ease-in-out;
 }
 
-.modal-overlay.show {
-  opacity: 1;
-  pointer-events: auto;
-}
+.modal-overlay.show { opacity: 1; pointer-events: auto; }
 
 .modal-content {
   background-color: var(--light-text);
@@ -399,36 +335,25 @@ h1 {
   text-align: left;
 }
 
-#leaderboard-table th {
-  border-bottom: 2px solid var(--dark-green);
-}
-
+#leaderboard-table th { border-bottom: 2px solid var(--dark-green); }
 #leaderboard-table td:first-child,
-#leaderboard-table td:last-child {
-  text-align: center;
-}
+#leaderboard-table td:last-child { text-align: center; }
 
+/* çok dar ekranlar */
 @media (max-width: 430px) {
   :root {
     --card-width: 11.5vw;
     --card-height: 16vw;
+    --stack-gap: 20px;
   }
-
   .tableau-piles {
-    transform: scale(0.92);
+    transform: none;
     transform-origin: top center;
   }
-
   .controls {
     margin-top: 24px;
     padding-bottom: 20px;
   }
-
-  h1 {
-    font-size: 1.4rem;
-  }
-
-  .score-display {
-    font-size: 0.9rem;
-  }
+  h1 { font-size: 1.6rem; }
+  .score-display { font-size: 1rem; }
 }

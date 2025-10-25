@@ -127,32 +127,28 @@ export default function SolitaireGame({ playerId }: { playerId: string }) {
         function dealCards() {
             for (let i = 0; i < 7; i++) {
                 const pileCards: Card[] = [];
-
-                // i. sütuna i+1 kart çek
                 for (let j = 0; j <= i; j++) {
                     const cardData = deck.pop();
                     if (cardData) pileCards.push(cardData);
                 }
-
-                // en üstteki (son çekilen) kartı açık yap
-                if (pileCards.length > 0) {
+                if (pileCards.length > 0)
                     pileCards[pileCards.length - 1].isFaceUp = true;
-                }
 
-                // alttan üste doğru ekle (sıra bozulmasın)
-                for (const cardData of pileCards) {
+                pileCards.forEach((cardData, index) => {
                     const cardElement = createCardElement(cardData);
+
+                    // ✅ stacking index CSS değişkeni olarak ekleniyor
+                    cardElement.style.setProperty('--stack-index', index.toString());
+
                     (tableauPiles[i] as HTMLElement).appendChild(cardElement);
-                }
+                });
             }
 
-            // kalan kartları stoğa (kapalı) koy
             for (const cardData of deck) {
                 const cardElement = createCardElement(cardData);
                 stockPile!.appendChild(cardElement);
             }
 
-            // stok placeholder'ını gizle
             const placeholder = stockPile!.querySelector('.pile-placeholder') as HTMLElement | null;
             if (placeholder) placeholder.style.display = 'none';
         }
