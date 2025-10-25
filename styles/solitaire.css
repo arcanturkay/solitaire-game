@@ -396,3 +396,29 @@ h1 {
 #leaderboard-table td:last-child {
   text-align: center;
 }
+
+@media (max-width: 530px) {
+  :root {
+    --card-width: 13vw;
+    --card-height: 19vw;
+    --stack-gap: 40px;
+  }
+
+  .tableau-piles {
+    transform: scale(0.94);
+    transform-origin: top center;
+  }
+
+  .controls {
+    margin-top: 24px;
+    padding-bottom: 20px;
+  }
+
+  h1 {
+    font-size: 1.4rem;
+  }
+
+  .score-display {
+    font-size: 0.9rem;
+  }
+}
