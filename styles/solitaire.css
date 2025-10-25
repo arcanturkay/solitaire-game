@@ -189,9 +189,11 @@ h1 {
 }
 
 .pile.tableau {
+  position: relative;
   height: auto;
+  min-height: calc(var(--card-height) + var(--stack-gap) * 10);
+  overflow: visible;
 }
-
 .pile-placeholder {
   width: var(--card-width);
   height: var(--card-height);
