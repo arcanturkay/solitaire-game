@@ -99,13 +99,6 @@ body {
   transform: translateZ(0);
 }
 
-@media (max-width: 480px) {
-  .game-container {
-    transform: none;            /* güvenli: clipping yok */
-  }
-}
-
-
 .game-container.active {
   opacity: 1;
 }
@@ -177,7 +170,7 @@ h1 {
   gap: var(--gap);
   padding: 0 var(--gap);
   box-sizing: border-box;
-  min-height: calc(var(--card-height) + var(--stack-gap) * 10);
+  min-height: calc(var(--card-height) * 1.6);
   flex-wrap: nowrap;
   overflow: hidden;
 }
@@ -244,16 +237,14 @@ h1 {
 .card.red { color: var(--red-suit); }
 .card.black { color: var(--black-suit); }
 
-.rank, .suit {
-  font-size: clamp(1.2rem, 2.5vw, 1.5rem);
+.rank {
+  font-size: 1.1rem;
   font-weight: 700;
-  line-height: 1.1;
 }
 
-@media (max-width: 480px) {
-  .rank, .suit {
-    font-size: clamp(1.2rem, 3vw, 1.6rem);
-  }
+.suit {
+  font-size: 1.1rem;
+  align-self: flex-end;
 }
 
 .tableau .card {
