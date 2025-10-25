@@ -11,88 +11,19 @@
   --red-suit: #D92D20;
   --black-suit: #1D2939;
   --selected-outline: #FDB022;
-  --bottom-gap: 60px; /* ✅ Alt buton boşluğu değişkeni */
 }
 
 /* 📱 Mobil & Farcaster WebView için optimize */
 @media (max-width: 600px) {
   :root {
-    --card-width: 11vw;
-    --card-height: 15vw;
+    --card-width: 13vw;
+    --card-height: 17.5vw;
     --gap: 0.8vw;
-    --bottom-gap: 80px; /* ⬆️ Mobilde alt boşluk artırıldı */
   }
 
-  /* === 📱 Farcaster WebView veya kısa ekranlar için özel düzen === */
-  @media (max-height: 720px) {
-    html, body {
-      height: 100%;
-      overflow: hidden;
-    }
-
-    .game-container {
-      gap: 10px;
-      padding-bottom: 0;
-    }
-
-    h1 {
-      font-size: 1.6rem;
-      margin-bottom: 2px;
-    }
-
-    .score-display {
-      font-size: 1rem;
-      padding: 6px 16px;
-    }
-
-    #current-player-status {
-      font-size: 0.9rem;
-      margin-bottom: 6px;
-    }
-
-    .top-piles {
-      margin-bottom: 6px;
-    }
-
-    .tableau-piles {
-      padding: 0 1vw;
-      gap: 0.6vw;
-    }
-
-    .tableau .card {
-      margin-bottom: -72px !important; /* daha sıkı dizilim */
-    }
-
-    .tableau .card.face-up {
-      margin-bottom: -65px !important;
-    }
-
-    .controls {
-      position: fixed;
-      bottom: env(safe-area-inset-bottom, 10px);
-      left: 0;
-      width: 100%;
-      justify-content: center;
-      gap: 10px;
-      background-color: var(--main-green);
-      padding: 10px 0;
-      box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.25);
-      z-index: 2000;
-    }
-
-    .control-btn,
-    .new-game-btn {
-      font-size: 0.9rem;
-      padding: 10px 14px;
-      border-radius: 6px;
-    }
-
-    /* mini ekranlarda h1 + skor + kartlar arası geçiş daha kompakt */
-    .top-piles,
-    .tableau-piles {
-      transform: scale(0.95);
-      transform-origin: top center;
-    }
+  html, body {
+    height: 100%;
+    overflow: hidden;
   }
 
   .tableau .card {
@@ -149,12 +80,6 @@ body {
   touch-action: manipulation;
 }
 
-/* 🎬 Smooth fade-in animasyonu */
-@keyframes fadeInGame {
-  from { opacity: 0; transform: translateY(15px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-
 .game-container {
   display: flex;
   flex-direction: column;
@@ -163,13 +88,41 @@ body {
   width: 100%;
   max-width: 800px;
   opacity: 0;
-  transition: opacity 0.5s ease;
+  transition: opacity 0.5s;
   transform: translateZ(0);
 }
 
 .game-container.active {
   opacity: 1;
-  animation: fadeInGame 0.5s ease forwards;
+}
+
+#farcaster-wall {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: var(--dark-green);
+  color: var(--light-text);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  z-index: 3000;
+  text-align: center;
+  padding: 20px;
+  gap: 20px;
+}
+
+.hidden { display: none !important; }
+
+#farcaster-wall h2 {
+  font-size: 2rem;
+  margin-bottom: 10px;
+}
+
+#farcaster-wall p {
+  font-size: 1.1rem;
 }
 
 h1 {
@@ -205,22 +158,15 @@ h1 {
 
 .tableau-piles {
   display: flex;
-  justify-content: space-between; /* ✅ kartlar ekran genişliğine tam yayılsın */
+  justify-content: center;
   width: 100%;
-  gap: clamp(4px, 0.8vw, 10px);   /* ✅ dinamik aralık */
-  padding: 0 1vw;                 /* ✅ kenarlara eşit boşluk */
+  gap: var(--gap);
+  padding: 0 var(--gap);
   box-sizing: border-box;
   min-height: calc(var(--card-height) * 1.6);
   flex-wrap: nowrap;
-  overflow-x: hidden;              /* 🔒 taşma olmasın */
+  overflow: hidden;
 }
-
-
-.tableau-piles::-webkit-scrollbar {
-  display: none;               /* 🔹 Chrome/Safari için scrollbar gizle */
-}
-
-
 
 .pile {
   width: var(--card-width);
@@ -240,7 +186,9 @@ h1 {
   box-sizing: border-box;
 }
 
-#stock .pile-placeholder { cursor: pointer; }
+#stock .pile-placeholder {
+  cursor: pointer;
+}
 
 .card {
   width: var(--card-width);
@@ -275,13 +223,22 @@ h1 {
 }
 
 .card.face-down .rank,
-.card.face-down .suit { display: none; }
+.card.face-down .suit {
+  display: none;
+}
 
 .card.red { color: var(--red-suit); }
 .card.black { color: var(--black-suit); }
 
-.rank { font-size: 1.1rem; font-weight: 700; }
-.suit { font-size: 1.1rem; align-self: flex-end; }
+.rank {
+  font-size: 1.1rem;
+  font-weight: 700;
+}
+
+.suit {
+  font-size: 1.1rem;
+  align-self: flex-end;
+}
 
 .tableau .card {
   top: auto;
@@ -289,10 +246,17 @@ h1 {
   margin-bottom: -90px;
 }
 
-.tableau .card.face-up { margin-bottom: -80px; }
-.tableau .card:last-child { margin-bottom: 0; }
+.tableau .card.face-up {
+  margin-bottom: -80px;
+}
 
-#waste .card:not(:last-child) { pointer-events: none; }
+.tableau .card:last-child {
+  margin-bottom: 0;
+}
+
+#waste .card:not(:last-child) {
+  pointer-events: none;
+}
 
 .card.dragging {
   opacity: 0.5;
@@ -305,17 +269,20 @@ h1 {
   display: flex;
   justify-content: center;
   align-items: center;
-  gap: 14px;
-  margin-top: 40px;
-  padding-bottom: var(--bottom-gap); /* ✅ Değişkenden kontrol */
+  gap: 12px;
+  margin-top: 24px;
+  padding-bottom: env(safe-area-inset-bottom, 10px);
   width: 94%;
   max-width: 400px;
   margin-inline: auto;
   box-sizing: border-box;
 }
 
+/* ✅ Warpcast içi optik hizalama */
 @supports (-webkit-touch-callout: none) {
-  .controls { transform: translateX(3px); }
+  .controls {
+    transform: translateX(3px);
+  }
 }
 
 .control-btn,
@@ -330,28 +297,27 @@ h1 {
   font-size: 1rem;
   font-weight: 700;
   cursor: pointer;
-  transition: background-color 0.2s, transform 0.1s ease;
+  transition: background-color 0.2s;
   text-align: center;
 }
 
-.control-btn:active,
-.new-game-btn:active {
-  transform: scale(0.95);
+.control-btn:hover,
+.new-game-btn:hover {
   background-color: var(--dark-blue-hover);
 }
 
 @media (max-width: 600px) {
   .controls {
     flex-wrap: wrap;
-    gap: 12px;
-    margin-bottom: 7vh;
+    gap: 10px;
+    margin-bottom: 5vh;
   }
 
   .control-btn,
   .new-game-btn {
     flex: 1 1 45%;
     max-width: 45%;
-    padding: 14px 0;
+    padding: 12px 0;
   }
 }
 
@@ -414,37 +380,12 @@ h1 {
   padding: 8px;
   text-align: left;
 }
-/* === 🎯 Mini görünüm için (Farcaster uyumlu) === */
-.compact-mode {
-  transform: scale(0.92);
-  transform-origin: top center;
+
+#leaderboard-table th {
+  border-bottom: 2px solid var(--dark-green);
 }
 
-.compact-mode .tableau .card {
-  margin-bottom: -70px !important;
-}
-
-.compact-mode .tableau .card.face-up {
-  margin-bottom: -63px !important;
-}
-
-.compact-mode .controls {
-  position: fixed;
-  bottom: env(safe-area-inset-bottom, 8px);
-  left: 0;
-  width: 100%;
-  background-color: var(--main-green);
-  padding: 8px 0;
-  justify-content: center;
-  gap: 10px;
-  z-index: 2000;
-}
-
-#game-container {
-  transform-origin: top center;
-  transition: transform 0.3s ease-out;
-}
-
-#leaderboard-table th { border-bottom: 2px solid var(--dark-green); }
 #leaderboard-table td:first-child,
-#leaderboard-table td:last-child { text-align: center; }
+#leaderboard-table td:last-child {
+  text-align: center;
+}

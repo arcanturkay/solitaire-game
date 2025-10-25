@@ -25,6 +25,7 @@ export default function SolitaireGame({ playerId }: { playerId: string }) {
         const newGameButtons = document.querySelectorAll('.new-game-btn');
         const gameContainer = document.getElementById('game-container');
         const winModal = document.getElementById('win-modal');
+        const finalScoreDisplay = document.getElementById('final-score');
         const winningPlayerNameDisplay = document.getElementById('winning-player-name');
         const leaderboardBtn = document.getElementById('leaderboard-btn');
         const leaderboardModal = document.getElementById('leaderboard-modal');
@@ -113,9 +114,10 @@ export default function SolitaireGame({ playerId }: { playerId: string }) {
                 onCardDoubleClick(e);
             });
             card.addEventListener('touchend', e => {
+                // Mobilde çift dokunuş yerine tek dokunma algısı eklenir
                 const now = Date.now();
                 const lastTap = (card as any)._lastTap || 0;
-                if (now - lastTap < 300) onCardDoubleClick(e as any);
+                if (now - lastTap < 300) onCardDoubleClick(e as any); // çift dokunuş algısı
                 (card as any)._lastTap = now;
             });
 
@@ -125,20 +127,32 @@ export default function SolitaireGame({ playerId }: { playerId: string }) {
         function dealCards() {
             for (let i = 0; i < 7; i++) {
                 const pileCards: Card[] = [];
+
+                // i. sütuna i+1 kart çek
                 for (let j = 0; j <= i; j++) {
                     const cardData = deck.pop();
                     if (cardData) pileCards.push(cardData);
                 }
-                if (pileCards.length > 0) pileCards[pileCards.length - 1].isFaceUp = true;
+
+                // en üstteki (son çekilen) kartı açık yap
+                if (pileCards.length > 0) {
+                    pileCards[pileCards.length - 1].isFaceUp = true;
+                }
+
+                // alttan üste doğru ekle (sıra bozulmasın)
                 for (const cardData of pileCards) {
                     const cardElement = createCardElement(cardData);
                     (tableauPiles[i] as HTMLElement).appendChild(cardElement);
                 }
             }
+
+            // kalan kartları stoğa (kapalı) koy
             for (const cardData of deck) {
                 const cardElement = createCardElement(cardData);
                 stockPile!.appendChild(cardElement);
             }
+
+            // stok placeholder'ını gizle
             const placeholder = stockPile!.querySelector('.pile-placeholder') as HTMLElement | null;
             if (placeholder) placeholder.style.display = 'none';
         }
@@ -165,6 +179,7 @@ export default function SolitaireGame({ playerId }: { playerId: string }) {
         function validateMove(cardsToMove: HTMLElement[], destPile: HTMLElement) {
             const topCardToMove = cardsToMove[0];
             if (destPile === topCardToMove.parentElement) return false;
+
             if (destPile.classList.contains('foundation')) {
                 if (cardsToMove.length > 1) return false;
                 const top = destPile.lastElementChild as HTMLElement | null;
@@ -172,6 +187,7 @@ export default function SolitaireGame({ playerId }: { playerId: string }) {
                 if (top && top.dataset.suit === topCardToMove.dataset.suit &&
                     parseInt(top.dataset.value!) + 1 === parseInt(topCardToMove.dataset.value!)) return true;
             }
+
             if (destPile.classList.contains('tableau')) {
                 const top = destPile.lastElementChild as HTMLElement | null;
                 if (!top) return topCardToMove.dataset.rank === 'K';
@@ -208,7 +224,6 @@ export default function SolitaireGame({ playerId }: { playerId: string }) {
             e.dataTransfer!.setData('text/plain', draggedCard.id);
             setTimeout(() => draggedCards.forEach(c => c.classList.add('dragging')), 0);
         }
-
         function onDragOver(e: DragEvent) { e.preventDefault(); }
         function onDrop(e: DragEvent) {
             e.preventDefault();
@@ -217,19 +232,23 @@ export default function SolitaireGame({ playerId }: { playerId: string }) {
                 moveCards(draggedCards, draggedCards[0].parentElement as HTMLElement, dest);
         }
         function onDragEnd() { draggedCards.forEach(c => c.classList.remove('dragging')); draggedCards = []; }
-
         function onCardDoubleClick(e: MouseEvent) {
             const card = e.currentTarget as HTMLElement;
             const src = card.parentElement as HTMLElement;
             const value = parseInt(card.dataset.value!);
+
             for (const foundationPile of Array.from(foundationPiles) as HTMLElement[]) {
                 const top = foundationPile.lastElementChild as HTMLElement | null;
+
+                // Eğer foundation boşsa ve bu kart As (A veya value 1) ise doğrudan gönder
                 if ((!top || top.classList.contains('pile-placeholder')) &&
                     (card.dataset.rank === 'A' || value === 1)) {
                     moveCards([card], src, foundationPile);
                     updateScore(10);
                     return;
                 }
+
+                // Foundation üstüne uygun suit ve +1 değerse taşı
                 if (top && top.dataset.suit === card.dataset.suit &&
                     parseInt(top.dataset.value!) + 1 === value) {
                     moveCards([card], src, foundationPile);
@@ -239,7 +258,7 @@ export default function SolitaireGame({ playerId }: { playerId: string }) {
             }
         }
 
-        // === Listeners ===
+        // Listeners
         newGameButtons.forEach(b => b.addEventListener('click', resetGame));
         [...foundationPiles, ...tableauPiles].forEach(p =>
             (p as HTMLElement).addEventListener('drop', onDrop as any)
@@ -259,7 +278,6 @@ export default function SolitaireGame({ playerId }: { playerId: string }) {
                 wasteCards.forEach(c => { c.classList.add('face-down'); c.draggable = false; stockPile!.appendChild(c); });
             }
         });
-
         leaderboardBtn!.addEventListener('click', () => {
             const scores = JSON.parse(localStorage.getItem(ACCUMULATED_SCORES_KEY) || '{}');
             const sorted = Object.entries(scores).sort((a, b) => (b[1] as number) - (a[1] as number));
@@ -271,23 +289,9 @@ export default function SolitaireGame({ playerId }: { playerId: string }) {
             });
             leaderboardModal!.classList.add('show');
         });
-
         closeLeaderboardBtn!.addEventListener('click', () => leaderboardModal!.classList.remove('show'));
         updatePlayerStatus();
         resetGame();
-        const adjustCardScale = () => {
-            const root = document.documentElement;
-            const containerWidth = window.innerWidth;
-            if (containerWidth < 700) {
-                const scale = Math.max(containerWidth / 700, 0.8);
-                root.style.setProperty('--table-scale', scale.toString());
-            } else {
-                root.style.setProperty('--table-scale', '1');
-            }
-        };
-
-        adjustCardScale();
-        window.addEventListener('resize', adjustCardScale);
     }, [playerId]);
 
     return (
