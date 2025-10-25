@@ -23,7 +23,9 @@
 
   html, body {
     height: 100%;
-    overflow: hidden;
+    overflow-x: hidden;
+    overflow-y: auto; /* ✅ Kartlar uzadığında dikey kaydırma aktif */
+    -webkit-overflow-scrolling: touch; /* ✅ mobil scroll pürüzsüz */
   }
 
   .tableau .card {
@@ -96,7 +98,7 @@ body {
   }
 @media (max-width: 480px) {
   .game-container {
-    transform: scale(0.9);
+    transform: scale(0.95);  /* ✅ azıcık daha doğal görünüm */
     transform-origin: top center;
   }
 }
