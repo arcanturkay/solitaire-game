@@ -1,7 +1,15 @@
-/** @type {import('next').NextConfig} */
 const nextConfig = {
-    reactStrictMode: false,
-    experimental: { appDir: true },
+    reactStrictMode: true,
+    async headers() {
+        return [
+            {
+                source: '/.well-known/farcaster.json',
+                headers: [
+                    { key: 'Content-Type', value: 'application/json' },
+                ],
+            },
+        ]
+    },
 };
 
-export default nextConfig;
+module.exports = nextConfig;
