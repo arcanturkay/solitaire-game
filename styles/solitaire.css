@@ -3,7 +3,7 @@
   --card-height: 135px;
   --gap: 12px;
   --border-radius: 10px;
-  --stack-gap: 20px;
+  --stack-gap: 40px;
   --main-green: #0A5323;
   --dark-green: #08401B;
   --light-text: #FFFFFF;
@@ -21,7 +21,7 @@
     --card-width: 13vw;
     --card-height: 17.5vw;
     --gap: 0.8vw;
-    --stack-gap: 20px;
+    --stack-gap: 27px;
   }
 
   html, body {
@@ -31,6 +31,7 @@
 
   .tableau .card {
     margin-bottom: -58px !important;
+    top: calc(var(--stack-index, 0) * var(--stack-gap));
   }
 
   .tableau .card.face-up {
