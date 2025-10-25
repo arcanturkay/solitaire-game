@@ -16,22 +16,42 @@
 /* 📱 Mobil & Farcaster WebView için optimize */
 @media (max-width: 600px) {
   :root {
-    --card-width: 14vw;
-    --card-height: 19vw;
-    --gap: 1.5vw;
+    --card-width: 13vw;         /* ✅ 14vw → 13vw ile 7 sütun tam hizalanır */
+    --card-height: 17.5vw;      /* oran korundu */
+    --gap: 0.8vw;               /* aralık azaltıldı */
   }
 
   html, body {
     height: 100%;
-    overflow: hidden; /* WebView kaymasını engeller */
+    overflow: hidden;           /* WebView kaymasını engeller */
   }
 
   .tableau .card {
-    margin-bottom: -60px !important; /* daha sıkı dizilim */
+    margin-bottom: -58px !important; /* daha sıkı dizilim */
   }
 
   .tableau .card.face-up {
-    margin-bottom: -55px !important;
+    margin-bottom: -52px !important;
+  }
+
+  .tableau-piles {
+    justify-content: center;
+    padding: 0 2vw;
+    gap: 0.8vw;
+    overflow-x: hidden;
+    flex-wrap: nowrap;
+  }
+
+  .pile.tableau {
+    flex: 0 0 auto;
+  }
+
+  .foundation-piles {
+    justify-content: flex-end;
+  }
+
+  .top-piles {
+    justify-content: space-between;
   }
 
   .game-container {
@@ -50,7 +70,7 @@ body {
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: flex-start; /* Farcaster çerçevesinde daha dengeli */
+  justify-content: flex-start;
   min-height: 100dvh; /* ✅ Safari WebView için 100vh yerine 100dvh */
   padding: 20px 0;
   margin: 0;
@@ -69,7 +89,7 @@ body {
   max-width: 800px;
   opacity: 0;
   transition: opacity 0.5s;
-  transform: translateZ(0); /* GPU render */
+  transform: translateZ(0);
 }
 
 .game-container.active {
@@ -144,7 +164,7 @@ h1 {
   padding: 0 var(--gap);
   box-sizing: border-box;
   min-height: calc(var(--card-height) * 1.6);
-  flex-wrap: nowrap; /* ✅ Farcaster içi hizalamayı korur */
+  flex-wrap: nowrap;
   overflow: hidden;
 }
 
