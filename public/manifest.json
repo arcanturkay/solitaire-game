@@ -1,29 +1,31 @@
 {
-  "version": 1,
-  "name": "Solitaire",
-  "icon": "https://solitaire-game-chi-gules.vercel.app/icon.png",
-  "home_url": "https://solitaire-game-chi-gules.vercel.app",
-  "terms_url": "https://solitaire-game-chi-gules.vercel.app/terms",
-  "privacy_url": "https://solitaire-game-chi-gules.vercel.app/privacy",
-  "description": "Play Solitaire directly inside Farcaster 🎮",
-  "authors": [
-    {
-      "name": "arcitotti",
-      "url": "https://warpcast.com/arcitotti"
-    }
-  ],
-  "buttons": [
-    {
-      "title": "Play Now",
-      "action": {
-        "type": "launch_frame",
-        "name": "Solitaire Game",
-        "url": "https://solitaire-game-chi-gules.vercel.app",
-        "splashImageUrl": "https://solitaire-game-chi-gules.vercel.app/splash-200.png",
-        "category": "Games",
-        "preview_image": "https://solitaire-game-chi-gules.vercel.app/icon.png",
-        "splashBackgroundColor": "#08401B"
-      }
-    }
-  ]
+  "frame": {
+    "name": "Solitaire",
+    "version": "1",
+    "iconUrl": "https://solitaire-game-chi-gules.vercel.app/icon.png",
+    "homeUrl": "https://solitaire-game-chi-gules.vercel.app",
+    "subtitle": "Classic Solitaire play directly inside Farcaster!",
+    "description": "Challenge yourself with the timeless Solitaire game. Play directly inside Farcaster with smooth touch controls, elegant design, and instant scoring. No installs, just fun!",
+    "primaryCategory": "games",
+    "screenshotUrls": [
+      "https://solitaire-game-chi-gules.vercel.app/embed-1200x800.png"
+    ],
+    "imageUrl": "https://solitaire-game-chi-gules.vercel.app/preview.png",
+    "heroImageUrl": "https://solitaire-game-chi-gules.vercel.app/preview.png",
+    "splashImageUrl": "https://solitaire-game-chi-gules.vercel.app/splash-200.png",
+    "splashBackgroundColor": "#08401B",
+    "tags": [
+      "game",
+      "solitaire",
+      "cards",
+      "farcaster",
+      "miniapp"
+    ],
+    "tagline": "Play classic Solitaire",
+    "buttonTitle": "Play Solitaire",
+    "ogDescription": "Challenge your mind with the timeless Solitaire experience now playable directly inside Farcaster.",
+    "ogTitle": "Solitaire Classic Card Game",
+    "ogImageUrl": "https://solitaire-game-chi-gules.vercel.app/preview.png",
+    "castShareUrl": "https://warpcast.com/~/compose?text=Play+Solitaire+directly+inside+Farcaster+🎮&embeds[]=https://solitaire-game-chi-gules.vercel.app"
+  }
 }
