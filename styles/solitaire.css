@@ -13,11 +13,33 @@
   --selected-outline: #FDB022;
 }
 
+/* 📱 Mobil & Farcaster WebView için optimize */
 @media (max-width: 600px) {
   :root {
-    --card-width: 12vw;
-    --card-height: 16.8vw;
+    --card-width: 14vw;
+    --card-height: 19vw;
     --gap: 1.5vw;
+  }
+
+  html, body {
+    height: 100%;
+    overflow: hidden; /* WebView kaymasını engeller */
+  }
+
+  .tableau .card {
+    margin-bottom: -60px !important; /* daha sıkı dizilim */
+  }
+
+  .tableau .card.face-up {
+    margin-bottom: -55px !important;
+  }
+
+  .game-container {
+    padding-bottom: 30px;
+  }
+
+  h1 {
+    font-size: 1.8rem;
   }
 }
 
@@ -28,12 +50,14 @@ body {
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
-  min-height: 100vh;
+  justify-content: flex-start; /* Farcaster çerçevesinde daha dengeli */
+  min-height: 100dvh; /* ✅ Safari WebView için 100vh yerine 100dvh */
   padding: 20px 0;
   margin: 0;
   user-select: none;
   overflow-x: hidden;
+  -webkit-text-size-adjust: 100%;
+  touch-action: manipulation;
 }
 
 .game-container {
@@ -43,17 +67,15 @@ body {
   gap: 20px;
   width: 100%;
   max-width: 800px;
-  /* BAŞLANGIÇTA OYUNU GİZLE */
   opacity: 0;
   transition: opacity 0.5s;
+  transform: translateZ(0); /* GPU render */
 }
 
-/* OYUNCU GİRİŞ YAPTIKTAN SONRA GÖSTER */
 .game-container.active {
   opacity: 1;
 }
 
-/* Farcaster Engelleme Katmanı */
 #farcaster-wall {
   position: fixed;
   top: 0;
@@ -74,10 +96,6 @@ body {
 
 .hidden { display: none !important; }
 
-#farcaster-wall.hidden {
-  display: none;
-}
-
 #farcaster-wall h2 {
   font-size: 2rem;
   margin-bottom: 10px;
@@ -91,6 +109,7 @@ h1 {
   font-size: 2.5rem;
   margin: 0;
   font-weight: 700;
+  text-align: center;
 }
 
 .score-display {
@@ -108,13 +127,10 @@ h1 {
   width: 100%;
   padding: 0 var(--gap);
   box-sizing: border-box;
+  flex-wrap: nowrap;
 }
 
-.stock-waste-piles {
-  display: flex;
-  gap: var(--gap);
-}
-
+.stock-waste-piles,
 .foundation-piles {
   display: flex;
   gap: var(--gap);
@@ -127,7 +143,9 @@ h1 {
   gap: var(--gap);
   padding: 0 var(--gap);
   box-sizing: border-box;
-  min-height: calc(var(--card-height) * 1.5); /* Provide space for cards */
+  min-height: calc(var(--card-height) * 1.6);
+  flex-wrap: nowrap; /* ✅ Farcaster içi hizalamayı korur */
+  overflow: hidden;
 }
 
 .pile {
@@ -137,7 +155,7 @@ h1 {
 }
 
 .pile.tableau {
-  height: auto; /* Tableau piles grow downwards */
+  height: auto;
 }
 
 .pile-placeholder {
@@ -168,18 +186,24 @@ h1 {
   padding: 4px;
   box-sizing: border-box;
   cursor: pointer;
-  transition: all 0.2s ease-in-out;
+  transition: transform 0.2s ease, opacity 0.2s ease;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
 }
 
 .card.face-down {
-  background-image: linear-gradient(45deg, #1d4ed8 25%, transparent 25%), linear-gradient(-45deg, #1d4ed8 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #1d4ed8 75%), linear-gradient(-45deg, transparent 75%, #1d4ed8 75%);
+  background-image: linear-gradient(45deg, #1d4ed8 25%, transparent 25%),
+  linear-gradient(-45deg, #1d4ed8 25%, transparent 25%),
+  linear-gradient(45deg, transparent 75%, #1d4ed8 75%),
+  linear-gradient(-45deg, transparent 75%, #1d4ed8 75%);
   background-size: 20px 20px;
   background-position: 0 0, 0 10px, 10px -10px, -10px 0px;
   background-color: #2563eb;
   border: 1px solid #1e40af;
 }
 
-.card.face-down .rank, .card.face-down .suit {
+.card.face-down .rank,
+.card.face-down .suit {
   display: none;
 }
 
@@ -190,6 +214,7 @@ h1 {
   font-size: 1.1rem;
   font-weight: 700;
 }
+
 .suit {
   font-size: 1.1rem;
   align-self: flex-end;
@@ -215,6 +240,8 @@ h1 {
 
 .card.dragging {
   opacity: 0.5;
+  transform: scale(1.05);
+  z-index: 999;
 }
 
 .controls {
@@ -222,9 +249,11 @@ h1 {
   gap: 10px;
   margin-top: 20px;
   align-items: center;
+  justify-content: center;
 }
 
-.control-btn, .new-game-btn {
+.control-btn,
+.new-game-btn {
   background-color: var(--dark-blue);
   color: var(--light-text);
   border: none;
@@ -236,7 +265,8 @@ h1 {
   transition: background-color 0.2s;
 }
 
-.control-btn:hover, .new-game-btn:hover {
+.control-btn:hover,
+.new-game-btn:hover {
   background-color: var(--dark-blue-hover);
 }
 
@@ -273,12 +303,12 @@ h1 {
 }
 
 .modal-content h2 {
-  font-size: 2.5rem;
+  font-size: 2.2rem;
   margin: 0 0 10px 0;
 }
 
 .modal-content p {
-  font-size: 1.2rem;
+  font-size: 1.1rem;
   margin: 0 0 20px 0;
 }
 
@@ -294,7 +324,8 @@ h1 {
   margin-bottom: 20px;
 }
 
-#leaderboard-table th, #leaderboard-table td {
+#leaderboard-table th,
+#leaderboard-table td {
   padding: 8px;
   text-align: left;
 }
@@ -302,6 +333,8 @@ h1 {
 #leaderboard-table th {
   border-bottom: 2px solid var(--dark-green);
 }
-#leaderboard-table td:first-child, #leaderboard-table td:last-child {
+
+#leaderboard-table td:first-child,
+#leaderboard-table td:last-child {
   text-align: center;
 }
