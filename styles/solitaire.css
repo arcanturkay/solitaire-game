@@ -3,7 +3,7 @@
   --card-height: 135px;
   --gap: 12px;
   --border-radius: 10px;
-  --stack-gap: 29px;
+  --stack-gap: 20px;
   --main-green: #0A5323;
   --dark-green: #08401B;
   --light-text: #FFFFFF;
@@ -21,7 +21,7 @@
     --card-width: 13vw;
     --card-height: 17.5vw;
     --gap: 0.8vw;
-    --stack-gap: 26px;
+    --stack-gap: 20px;
   }
 
   html, body {
