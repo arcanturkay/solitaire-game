@@ -6,51 +6,94 @@ import SolitaireGame from './components/SolitaireGame';
 
 export default function Page() {
     const [showSplash, setShowSplash] = useState(true);
-    const [playerId, setPlayerId] = useState<string | null>(null);
+    const [player, setPlayer] = useState<{ fid: number; username: string; wallet?: string } | null>(null);
+    const [notInFarcaster, setNotInFarcaster] = useState(false);
 
     useEffect(() => {
         if (showSplash) return;
 
-        // SDK üzerinden kullanıcıyı çekmeyi dene
-        async function resolvePlayer() {
+        async function getFarcasterIdentity() {
             try {
-                // Miniapps SDK global: window.farcaster.miniapp
-                const mini = (window as any)?.farcaster?.miniapp;
-                if (mini?.context?.getUser) {
-                    const user = await mini.context.getUser();
-                    // user: { fid, username, displayName, ... } şeklinde gelir
-                    if (user?.fid) {
-                        setPlayerId(user.username ? `@${user.username}` : `fid:${user.fid}`);
-                        return;
-                    }
-                }
-
-                // Eski/fallback yol: bazı istemciler window.farcaster.user taşır
-                const legacy = (window as any)?.farcaster?.user;
-                if (legacy?.fid) {
-                    setPlayerId(legacy.username ? `@${legacy.username}` : `fid:${legacy.fid}`);
+                const fc = (window as any).farcaster?.miniapp;
+                if (!fc?.context?.getUser) {
+                    setNotInFarcaster(true);
                     return;
                 }
 
-                // Olmadı, guest
-                setPlayerId('@guest');
-            } catch {
-                setPlayerId('@guest');
+                const user = await fc.context.getUser();
+                if (!user?.fid) {
+                    setNotInFarcaster(true);
+                    return;
+                }
+
+                // ✅ Farcaster ID ve Wallet adresi (ilk verification)
+                const wallet = Array.isArray(user.verifications) && user.verifications.length > 0
+                    ? user.verifications[0]
+                    : undefined;
+
+                setPlayer({
+                    fid: user.fid,
+                    username: user.username ? `@${user.username}` : `fid:${user.fid}`,
+                    wallet,
+                });
+            } catch (err) {
+                console.warn('❌ Farcaster identity fetch failed', err);
+                setNotInFarcaster(true);
             }
         }
 
-        resolvePlayer();
+        getFarcasterIdentity();
     }, [showSplash]);
 
+    // splash ekranı
     if (showSplash) return <SplashScreen onFinish={() => setShowSplash(false)} />;
 
-    if (!playerId) {
+    // Farcaster dışı uyarısı
+    if (notInFarcaster)
         return (
-            <p style={{ color: 'white', textAlign: 'center', marginTop: '40vh' }}>
-                Connecting...
-            </p>
+            <div
+                style={{
+                    height: '100vh',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                    background: 'radial-gradient(circle at center, #0A5323 30%, #043011 100%)',
+                    color: 'white',
+                    textAlign: 'center',
+                    fontFamily: 'sans-serif',
+                    padding: 20,
+                }}
+            >
+                <h2>⚠️ Please open in Farcaster</h2>
+                <p style={{ opacity: 0.8 }}>This game only works inside Warpcast.</p>
+            </div>
         );
-    }
 
-    return <SolitaireGame playerId={playerId} />;
+    if (!player)
+        return <p style={{ color: 'white', textAlign: 'center', marginTop: '40vh' }}>Connecting...</p>;
+
+    // Oyuna geç — Farcaster kimlik + wallet bilgisiyle
+    return (
+        <>
+            <SolitaireGame playerId={player.username} />
+            <div
+                style={{
+                    position: 'fixed',
+                    bottom: 8,
+                    right: 10,
+                    fontSize: '0.75rem',
+                    opacity: 0.8,
+                    color: 'white',
+                }}
+            >
+                👤 {player.username}
+                {player.wallet && (
+                    <div style={{ fontSize: '0.7rem', color: '#b8ffc8' }}>
+                        {player.wallet.slice(0, 6)}…{player.wallet.slice(-4)}
+                    </div>
+                )}
+            </div>
+        </>
+    );
 }
