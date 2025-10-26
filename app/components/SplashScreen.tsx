@@ -1,87 +1,37 @@
-export const metadata = {
-    title: "Solitaire Game",
-    description: "Play Solitaire directly inside Farcaster 🎮",
-    openGraph: {
-        title: "Solitaire Game",
-        description: "Play Solitaire directly inside Farcaster 🎮",
-        images: [
-            {
-                url: "https://solitaire-game-chi-gules.vercel.app/embed-1200x800.png",
-                width: 1200,
-                height: 800,
-                alt: "Solitaire Game",
-            },
-        ],
-    },
-};
+'use client';
+import { useEffect } from 'react';
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+interface SplashScreenProps {
+    onFinish: () => void;
+}
+
+export default function SplashScreen({ onFinish }: SplashScreenProps) {
+    useEffect(() => {
+        const timer = setTimeout(() => onFinish(), 2500); // 2.5 seconds then proceed
+        return () => clearTimeout(timer);
+    }, [onFinish]);
+
     return (
-        <html lang="en">
-        <head>
-            {/* ✅ Base meta */}
-            <meta charSet="utf-8" />
-            <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-
-            {/* 🎯 Farcaster Mini App Manifest */}
-            <meta
-                name="fc:miniapp"
-                content={`{
-            "version": "1",
-            "imageUrl": "https://solitaire-game-chi-gules.vercel.app/embed-1200x800.png",
-            "alwaysShowSplash": false,
-            "button": {
-              "title": "Play Solitaire 🎮",
-              "action": {
-                "type": "launch_frame",
-                "name": "Solitaire Game",
-                "url": "https://solitaire-game-chi-gules.vercel.app",
-                "splashImageUrl": "https://solitaire-game-chi-gules.vercel.app/splash-200.png",
-                "splashBackgroundColor": "#08401B"
-              }
-            }
-          }`}
+        <div
+            style={{
+                display: 'flex',
+                flexDirection: 'column',
+                justifyContent: 'center',
+                alignItems: 'center',
+                height: '100vh',
+                background: 'radial-gradient(circle at center, #0A5323 30%, #043011 100%)',
+                color: 'white',
+                fontFamily: 'sans-serif',
+                transition: 'opacity 0.5s ease',
+            }}
+        >
+            <img
+                src="https://solitaire-game-chi-gules.vercel.app/splash-200.png"
+                alt="Solitaire logo"
+                style={{ width: 100, height: 100, marginBottom: 20 }}
             />
-
-            {/* ✅ Farcaster MiniApp SDK (browser build) */}
-            <script
-                src="https://cdn.jsdelivr.net/npm/@farcaster/mini-apps-sdk@0.2.2/dist/browser.js"
-                defer
-            ></script>
-
-            {/* ✅ Fail-safe ready() handler */}
-            <script
-                dangerouslySetInnerHTML={{
-                    __html: `
-              (function () {
-                function callReady() {
-                  try {
-                    const fc = window.farcaster?.miniapp?.actions;
-                    if (fc && typeof fc.ready === 'function') {
-                      fc.ready();
-                      return true;
-                    }
-                  } catch (e) {}
-                  return false;
-                }
-
-                document.addEventListener('DOMContentLoaded', function () {
-                  if (callReady()) return;
-                  var tries = 0;
-                  var iv = setInterval(function () {
-                    tries++;
-                    if (callReady() || tries > 20) clearInterval(iv);
-                  }, 150);
-                });
-
-                // fallback → force close splash after 3s
-                setTimeout(callReady, 3000);
-              })();
-            `,
-                }}
-            />
-        </head>
-        <body>{children}</body>
-        </html>
+            <h2 style={{ fontSize: '1.6rem', fontWeight: 600 }}>Solitaire</h2>
+            <p style={{ opacity: 0.8 }}>loading...</p>
+        </div>
     );
 }
