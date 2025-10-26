@@ -14,41 +14,54 @@ export default function Page() {
 
         async function resolvePlayer() {
             try {
-                // ✅ Wait for Farcaster MiniApp SDK to be ready
+                console.log('🟣 Checking for Farcaster SDK...');
+
+                // ✅ Wait up to 2s for Farcaster MiniApp SDK
                 await new Promise<void>((resolve) => {
-                    const checkReady = () => {
-                        if ((window as any)?.farcaster?.miniapp?.actions?.ready) {
+                    let elapsed = 0;
+                    const interval = setInterval(() => {
+                        const fcReady = (window as any)?.farcaster?.miniapp?.actions?.ready;
+                        elapsed += 150;
+                        if (fcReady || elapsed >= 2000) {
+                            clearInterval(interval);
                             resolve();
-                        } else {
-                            setTimeout(checkReady, 150);
                         }
-                    };
-                    checkReady();
+                    }, 150);
                 });
 
                 const fc = (window as any)?.farcaster?.miniapp;
                 let user: any = null;
 
-                // ✅ Modern SDK: context.getUser()
+                // ✅ Try modern SDK
                 if (fc?.context?.getUser) {
-                    user = await fc.context.getUser().catch(() => null);
+                    console.log('✅ Detected Farcaster MiniApp SDK (modern)');
+                    user = await fc.context.getUser().catch((err: any) => {
+                        console.warn('context.getUser() failed:', err);
+                        return null;
+                    });
                 }
 
-                // ✅ Legacy SDK fallback
+                // ✅ Try legacy path
                 if (!user && (window as any)?.farcaster?.user) {
+                    console.log('⚙️ Using legacy Farcaster SDK (window.farcaster.user)');
                     user = (window as any).farcaster.user;
                 }
+
+                // ✅ Log what we got
+                console.log('📦 Farcaster user object:', user);
 
                 if (user?.fid) {
                     const username =
                         user.username || (user.displayName ? user.displayName.replace(/\s+/g, '') : null);
-                    setPlayerId(username ? `@${username}` : `fid:${user.fid}`);
+                    const id = username ? `@${username}` : `fid:${user.fid}`;
+                    console.log('✅ Connected as:', id);
+                    setPlayerId(id);
                 } else {
-                    // Running outside of Farcaster client (e.g. preview tool)
+                    console.log('🟡 No Farcaster user detected → using @guest');
                     setPlayerId('@guest');
                 }
             } catch (err) {
-                console.warn('Farcaster user fetch failed:', err);
+                console.error('❌ Farcaster user fetch failed:', err);
                 setError('Unable to connect to Farcaster.');
                 setPlayerId('@guest');
             }
@@ -57,10 +70,10 @@ export default function Page() {
         resolvePlayer();
     }, [showSplash]);
 
-    // ⏳ Splash screen
+    // ⏳ Splash
     if (showSplash) return <SplashScreen onFinish={() => setShowSplash(false)} />;
 
-    // 🧱 Connection error overlay
+    // 🧱 Error wall
     if (error) {
         return (
             <div id="farcaster-wall">
@@ -85,7 +98,7 @@ export default function Page() {
         );
     }
 
-    // ⌛ Connecting status
+    // ⌛ Connecting text
     if (!playerId) {
         return (
             <p style={{ color: 'white', textAlign: 'center', marginTop: '40vh' }}>
@@ -94,6 +107,6 @@ export default function Page() {
         );
     }
 
-    // 🎮 Launch the game
+    // 🎮 Start game
     return <SolitaireGame playerId={playerId} />;
 }
