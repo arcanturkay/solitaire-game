@@ -1,6 +1,3 @@
-// app/layout.tsx
-import "./globals.css";
-
 export const metadata = {
     title: "Solitaire Game",
     description: "Play Solitaire directly inside Farcaster 🎮",
@@ -22,6 +19,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     return (
         <html lang="en">
         <head>
+            {/* 🎯 Farcaster Mini App Embed Meta */}
             <meta
                 name="fc:miniapp"
                 content={`{
@@ -34,18 +32,19 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                 "name": "Solitaire Game",
                 "url": "https://solitaire-game-chi-gules.vercel.app",
                 "splashImageUrl": "https://solitaire-game-chi-gules.vercel.app/splash-200.png",
-                "splashBackgroundColor": "#08401B"
+                "splashBackgroundColor": "#043011"
               }
             }
           }`}
             />
-            {/* Farcaster SDK (async değil, defer) */}
+
+            {/* ✅ Farcaster SDK (UMD Build) — `defer` ile yüklenir */}
             <script
-                src="https://cdn.jsdelivr.net/npm/@farcaster/mini-apps-sdk@0.2.2/dist/browser.js"
-                async={false}
-                defer={false}
-            />
-            {/* SDK hazır olunca splash kaldır */}
+                src="https://cdn.jsdelivr.net/npm/@farcaster/mini-apps-sdk@latest/dist/browser.js"
+                defer
+            ></script>
+
+            {/* ✅ Splash ekranını kaldırmak ve SDK’yı hazır işaretlemek */}
             <script
                 dangerouslySetInnerHTML={{
                     __html: `
@@ -54,24 +53,39 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                   try {
                     if(window.farcaster?.miniapp?.actions?.ready){
                       window.farcaster.miniapp.actions.ready();
-                      console.log("✅ Farcaster SDK ready()");
+                      console.log("✅ Farcaster SDK ready() called");
                       return true;
                     }
                   } catch(e){}
                   return false;
                 }
+
+                // SDK geldikten sonra ready() çağırmayı dener
                 document.addEventListener("DOMContentLoaded", ()=>{
                   if (markReady()) return;
                   let tries = 0;
                   const iv = setInterval(()=>{
-                    if (markReady() || ++tries > 25) clearInterval(iv);
+                    if (markReady() || ++tries > 30) clearInterval(iv);
                   }, 150);
                 });
+
+                // Yine de en geç 4 saniyede splash'ı kaldır
                 setTimeout(markReady, 4000);
               })();
             `,
                 }}
             />
+
+            {/* 💅 Basit global body style (istenirse kaldırılabilir) */}
+            <style>{`
+          body {
+            margin: 0;
+            background: #043011;
+            color: white;
+            font-family: 'Inter', sans-serif;
+            min-height: 100vh;
+          }
+        `}</style>
         </head>
         <body>{children}</body>
         </html>
