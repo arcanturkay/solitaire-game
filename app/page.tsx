@@ -8,26 +8,24 @@ export default function Page() {
     const [farcasterUser, setFarcasterUser] = useState<string | null>(null);
     const [connecting, setConnecting] = useState(false);
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
-    const [debugLog, setDebugLog] = useState<string>('⏳ App loading...');
+    const [debugLog, setDebugLog] = useState<string>('⏳ Initializing...');
 
-    // Splash ekranı (2.5 saniye)
+    // --- Splash Screen ---
     useEffect(() => {
         const timer = setTimeout(() => setShowSplash(false), 2500);
         return () => clearTimeout(timer);
     }, []);
 
-    // Warpcast SDK bekleme ve ready()
+    // --- Wait for Farcaster SDK + Call ready() ---
     useEffect(() => {
         const waitForSDK = async () => {
             const start = Date.now();
             return new Promise<boolean>((resolve) => {
                 const check = () => {
-                    const hasSDK =
-                        (window as any)?.farcaster?.miniapp?.actions &&
-                        (window as any)?.farcaster?.miniapp?.context;
-                    if (hasSDK) return resolve(true);
-                    if (Date.now() - start > 4000) return resolve(false);
-                    setTimeout(check, 120);
+                    const fc = (window as any)?.farcaster;
+                    if (fc && fc.miniapp) return resolve(true);
+                    if (Date.now() - start > 6000) return resolve(false);
+                    setTimeout(check, 150);
                 };
                 check();
             });
@@ -36,71 +34,82 @@ export default function Page() {
         (async () => {
             setDebugLog('🟡 Waiting for Farcaster SDK...');
             const ok = await waitForSDK();
+
             if (ok) {
                 try {
-                    await (window as any).farcaster.miniapp.actions.ready();
-                    console.log('✅ sdk.actions.ready() triggered (page.tsx)');
-                    setDebugLog('🟢 Farcaster SDK ready() called');
+                    await (window as any).farcaster.miniapp.actions.ready?.();
+                    console.log('✅ Farcaster SDK ready() called');
+                    setDebugLog('🟢 Farcaster SDK ready()');
                 } catch (e) {
-                    console.warn('⚠️ ready() call failed:', e);
-                    setDebugLog('⚠️ SDK ready() failed');
+                    console.warn('⚠️ ready() failed:', e);
+                    setDebugLog('⚠️ ready() failed');
                 }
             } else {
-                console.warn('⚠️ Farcaster SDK not found after timeout');
-                setDebugLog('❌ Farcaster SDK not detected');
+                console.warn('❌ Farcaster SDK not found after timeout');
+                setDebugLog('❌ Farcaster SDK not detected (check launch method)');
             }
         })();
     }, []);
 
-    // Farcaster bağlantısı
+    // --- Connect to Farcaster ---
     const connectFarcaster = async () => {
         setConnecting(true);
         setErrorMessage(null);
-        setDebugLog('🔍 Checking SDK + fetching user...');
+        setDebugLog('🔍 Trying to connect...');
 
         try {
-            // SDK’nın yüklenmesini bekle
             const ok = await new Promise<boolean>((resolve) => {
                 let waited = 0;
                 const iv = setInterval(() => {
-                    waited += 100;
-                    const sdk = (window as any)?.farcaster?.miniapp;
-                    if (sdk?.context) {
+                    waited += 150;
+                    const fc = (window as any)?.farcaster;
+                    if (fc && fc.miniapp?.context) {
                         clearInterval(iv);
                         resolve(true);
-                    } else if (waited > 4000) {
+                    } else if (waited > 6000) {
                         clearInterval(iv);
                         resolve(false);
                     }
-                }, 100);
+                }, 150);
             });
 
-            if (!ok) throw new Error('Farcaster SDK not detected. Please open in Warpcast.');
+            if (!ok) throw new Error('Farcaster SDK not detected. Please open via “Open Mini App” in Warpcast.');
 
             const sdk = (window as any).farcaster.miniapp;
-            try { await sdk.actions.ready(); } catch {}
+            try { await sdk.actions.ready?.(); } catch {}
 
-            const context = await sdk.context.getUser();
+            // Retry for context (bazı cihazlarda geç geliyor)
+            let context: any;
+            for (let i = 0; i < 10; i++) {
+                try {
+                    context = await sdk.context.getUser?.();
+                    if (context) break;
+                } catch {}
+                await new Promise(r => setTimeout(r, 200));
+            }
+
+            if (!context) throw new Error('Could not fetch Farcaster user. Try again.');
+
             console.log('✅ Farcaster context:', context);
             setDebugLog('✅ Context fetched');
 
-            if (context?.username) setFarcasterUser(context.username);
-            else if (context?.fid) setFarcasterUser(`fid:${context.fid}`);
-            else throw new Error('Unable to retrieve user info.');
+            if (context.username) setFarcasterUser(context.username);
+            else if (context.fid) setFarcasterUser(`fid:${context.fid}`);
+            else throw new Error('User info missing in context.');
         } catch (err: any) {
-            console.error('❌ Error connecting wallet:', err);
+            console.error('❌ Connection error:', err);
             setErrorMessage(err.message || 'Connection failed.');
-            setFarcasterUser(null);
             setDebugLog('❌ ' + (err.message || 'Connection failed.'));
+            setFarcasterUser(null);
         } finally {
             setConnecting(false);
         }
     };
 
-    // Splash gösterimi
+    // --- Splash ---
     if (showSplash) return <SplashScreen onFinish={() => setShowSplash(false)} />;
 
-    // Kullanıcı henüz bağlanmadıysa
+    // --- No user yet ---
     if (!farcasterUser) {
         return (
             <div
@@ -130,6 +139,7 @@ export default function Page() {
                 >
                     Solitaire 🎮
                 </h1>
+
                 <p style={{ opacity: 0.8 }}>Connect your Farcaster Wallet to start playing.</p>
 
                 {errorMessage && (
@@ -163,16 +173,6 @@ export default function Page() {
                         boxShadow: '0 0 10px rgba(0, 128, 255, 0.3)',
                         transition: 'all 0.25s ease-in-out',
                     }}
-                    onMouseEnter={(e) => {
-                        if (!connecting)
-                            (e.target as HTMLButtonElement).style.boxShadow =
-                                '0 0 18px rgba(0,128,255,0.7)';
-                    }}
-                    onMouseLeave={(e) => {
-                        if (!connecting)
-                            (e.target as HTMLButtonElement).style.boxShadow =
-                                '0 0 10px rgba(0,128,255,0.3)';
-                    }}
                 >
                     {connecting
                         ? 'Connecting...'
@@ -194,38 +194,39 @@ export default function Page() {
                     or with your <strong>Farcaster Wallet</strong> connected.
                 </p>
 
-                {/* 🧭 Debug Overlay */}
+                {/* Debug Badge */}
                 <div
                     style={{
                         position: 'absolute',
                         bottom: '8px',
                         left: '8px',
                         fontSize: '0.75rem',
-                        background: 'rgba(0,0,0,0.5)',
+                        background: 'rgba(0,0,0,0.6)',
                         padding: '4px 8px',
                         borderRadius: '6px',
-                        opacity: 0.7,
+                        opacity: 0.8,
                         userSelect: 'none',
                     }}
                 >
-                    {debugLog}
+                    {(typeof window !== 'undefined' && (window as any).farcaster)
+                        ? `🟢 Farcaster Detected | ${debugLog}`
+                        : `🔴 No Farcaster SDK | ${debugLog}`}
                 </div>
             </div>
         );
     }
 
-    // Kullanıcı bağlandıysa oyunu yükle
+    // --- User connected -> load game ---
     return (
         <>
             <SolitaireGame playerId={farcasterUser} />
-            {/* Debug overlay yine görünür */}
             <div
                 style={{
                     position: 'fixed',
                     bottom: '8px',
                     left: '8px',
                     fontSize: '0.75rem',
-                    background: 'rgba(0,0,0,0.4)',
+                    background: 'rgba(0,0,0,0.5)',
                     padding: '4px 8px',
                     borderRadius: '6px',
                     opacity: 0.6,
