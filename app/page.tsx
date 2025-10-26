@@ -127,7 +127,7 @@ export default function Page() {
                     }}
                     onMouseLeave={(e) => {
                         if (!connecting)
-                            (e.target as HTMLButtonButton).style.boxShadow =
+                            (e.target as HTMLButtonElement).style.boxShadow =
                                 '0 0 10px rgba(0,128,255,0.3)';
                     }}
                 >

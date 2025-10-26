@@ -75,17 +75,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             `,
                 }}
             />
-
-            {/* 💅 Basit global body style (istenirse kaldırılabilir) */}
-            <style>{`
-          body {
-            margin: 0;
-            background: #043011;
-            color: white;
-            font-family: 'Inter', sans-serif;
-            min-height: 100vh;
-          }
-        `}</style>
         </head>
         <body>{children}</body>
         </html>
