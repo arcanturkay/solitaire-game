@@ -8,6 +8,7 @@ export default function Page() {
     const [farcasterUser, setFarcasterUser] = useState<string | null>(null);
     const [connecting, setConnecting] = useState(false);
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
+    const [debugLog, setDebugLog] = useState<string>('⏳ App loading...');
 
     // Splash ekranı (2.5 saniye)
     useEffect(() => {
@@ -15,7 +16,7 @@ export default function Page() {
         return () => clearTimeout(timer);
     }, []);
 
-    // Warpcast SDK hazır olunca splash'ı kapatır
+    // Warpcast SDK bekleme ve ready()
     useEffect(() => {
         const waitForSDK = async () => {
             const start = Date.now();
@@ -33,16 +34,20 @@ export default function Page() {
         };
 
         (async () => {
+            setDebugLog('🟡 Waiting for Farcaster SDK...');
             const ok = await waitForSDK();
             if (ok) {
                 try {
                     await (window as any).farcaster.miniapp.actions.ready();
                     console.log('✅ sdk.actions.ready() triggered (page.tsx)');
+                    setDebugLog('🟢 Farcaster SDK ready() called');
                 } catch (e) {
                     console.warn('⚠️ ready() call failed:', e);
+                    setDebugLog('⚠️ SDK ready() failed');
                 }
             } else {
                 console.warn('⚠️ Farcaster SDK not found after timeout');
+                setDebugLog('❌ Farcaster SDK not detected');
             }
         })();
     }, []);
@@ -51,9 +56,10 @@ export default function Page() {
     const connectFarcaster = async () => {
         setConnecting(true);
         setErrorMessage(null);
+        setDebugLog('🔍 Checking SDK + fetching user...');
 
         try {
-            // 1️⃣ SDK'nın yüklenmesini bekle
+            // SDK’nın yüklenmesini bekle
             const ok = await new Promise<boolean>((resolve) => {
                 let waited = 0;
                 const iv = setInterval(() => {
@@ -72,13 +78,11 @@ export default function Page() {
             if (!ok) throw new Error('Farcaster SDK not detected. Please open in Warpcast.');
 
             const sdk = (window as any).farcaster.miniapp;
-            try {
-                await sdk.actions.ready(); // ready() idempotent
-            } catch {}
+            try { await sdk.actions.ready(); } catch {}
 
-            // 2️⃣ Kullanıcıyı al
             const context = await sdk.context.getUser();
             console.log('✅ Farcaster context:', context);
+            setDebugLog('✅ Context fetched');
 
             if (context?.username) setFarcasterUser(context.username);
             else if (context?.fid) setFarcasterUser(`fid:${context.fid}`);
@@ -87,6 +91,7 @@ export default function Page() {
             console.error('❌ Error connecting wallet:', err);
             setErrorMessage(err.message || 'Connection failed.');
             setFarcasterUser(null);
+            setDebugLog('❌ ' + (err.message || 'Connection failed.'));
         } finally {
             setConnecting(false);
         }
@@ -95,7 +100,7 @@ export default function Page() {
     // Splash gösterimi
     if (showSplash) return <SplashScreen onFinish={() => setShowSplash(false)} />;
 
-    // Bağlanmamış kullanıcı
+    // Kullanıcı henüz bağlanmadıysa
     if (!farcasterUser) {
         return (
             <div
@@ -110,6 +115,7 @@ export default function Page() {
                     fontFamily: 'Inter, sans-serif',
                     textAlign: 'center',
                     padding: '20px',
+                    position: 'relative'
                 }}
             >
                 <h1
@@ -187,10 +193,48 @@ export default function Page() {
                     <br />
                     or with your <strong>Farcaster Wallet</strong> connected.
                 </p>
+
+                {/* 🧭 Debug Overlay */}
+                <div
+                    style={{
+                        position: 'absolute',
+                        bottom: '8px',
+                        left: '8px',
+                        fontSize: '0.75rem',
+                        background: 'rgba(0,0,0,0.5)',
+                        padding: '4px 8px',
+                        borderRadius: '6px',
+                        opacity: 0.7,
+                        userSelect: 'none',
+                    }}
+                >
+                    {debugLog}
+                </div>
             </div>
         );
     }
 
-    // Oyunu yükle
-    return <SolitaireGame playerId={farcasterUser} />;
+    // Kullanıcı bağlandıysa oyunu yükle
+    return (
+        <>
+            <SolitaireGame playerId={farcasterUser} />
+            {/* Debug overlay yine görünür */}
+            <div
+                style={{
+                    position: 'fixed',
+                    bottom: '8px',
+                    left: '8px',
+                    fontSize: '0.75rem',
+                    background: 'rgba(0,0,0,0.4)',
+                    padding: '4px 8px',
+                    borderRadius: '6px',
+                    opacity: 0.6,
+                    zIndex: 999,
+                    userSelect: 'none',
+                }}
+            >
+                {debugLog}
+            </div>
+        </>
+    );
 }
