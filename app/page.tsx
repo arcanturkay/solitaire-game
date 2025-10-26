@@ -7,31 +7,42 @@ import SolitaireGame from './components/SolitaireGame';
 export default function Page() {
     const [showSplash, setShowSplash] = useState(true);
     const [playerId, setPlayerId] = useState<string | null>(null);
+    const [walletAddr, setWalletAddr] = useState<string | null>(null);
     const [error, setError] = useState<string | null>(null);
 
-    // ✅ Farcaster splash'ı manuel kapat (green screen fix)
+    // ✅ Splash kapanma fix (yeşil ekran engelleme)
     useEffect(() => {
         try {
-            const fc = (window as any)?.farcaster?.miniapp?.actions;
+            if (!(window as any).farcaster) {
+                // mock SDK for web/local preview
+                (window as any).farcaster = {
+                    miniapp: {
+                        actions: {
+                            ready: () => console.log('🧩 Fake Farcaster SDK ready() (localhost mode)'),
+                        },
+                    },
+                };
+            }
+
+            const fc = (window as any).farcaster.miniapp.actions;
             if (fc && typeof fc.ready === 'function') {
                 fc.ready();
-                console.log('✅ Farcaster SDK ready() called manually (splash closed)');
-            } else {
-                console.warn('⚠️ Farcaster ready() not found yet.');
+                console.log('✅ Farcaster SDK ready() called (real or mock)');
             }
         } catch (e) {
             console.warn('⚠️ Farcaster ready() call failed:', e);
         }
     }, []);
 
+    // ✅ Kullanıcı ve wallet bağlantısı
     useEffect(() => {
         if (showSplash) return;
 
-        async function resolvePlayer() {
+        async function connectFarcaster() {
             try {
                 console.log('🟣 Checking for Farcaster SDK...');
 
-                // ✅ Wait up to 2s for SDK to be ready
+                // SDK hazır olana kadar max 2sn bekle
                 await new Promise<void>((resolve) => {
                     let elapsed = 0;
                     const interval = setInterval(() => {
@@ -46,8 +57,9 @@ export default function Page() {
 
                 const fc = (window as any)?.farcaster?.miniapp;
                 let user: any = null;
+                let wallet: any = null;
 
-                // ✅ Modern SDK
+                // 1️⃣ Kullanıcı kimliği
                 if (fc?.context?.getUser) {
                     console.log('✅ Detected Farcaster MiniApp SDK (modern)');
                     user = await fc.context.getUser().catch((err: any) => {
@@ -56,15 +68,30 @@ export default function Page() {
                     });
                 }
 
-                // ✅ Legacy fallback
+                // Legacy fallback
                 if (!user && (window as any)?.farcaster?.user) {
                     console.log('⚙️ Using legacy Farcaster SDK (window.farcaster.user)');
                     user = (window as any).farcaster.user;
                 }
 
-                // ✅ Log fetched user
                 console.log('📦 Farcaster user object:', user);
 
+                // 2️⃣ Wallet bağlantısı (kullanıcı izni ister)
+                if (fc?.actions?.requestWallet) {
+                    try {
+                        wallet = await fc.actions.requestWallet().catch(() => null);
+                        if (wallet?.address) {
+                            console.log('🔗 Connected wallet:', wallet);
+                            setWalletAddr(wallet.address);
+                        } else {
+                            console.log('⚠️ Wallet connection rejected or unavailable.');
+                        }
+                    } catch (e) {
+                        console.warn('⚠️ requestWallet() failed:', e);
+                    }
+                }
+
+                // 3️⃣ Player ID oluştur
                 if (user?.fid) {
                     const username =
                         user.username || (user.displayName ? user.displayName.replace(/\s+/g, '') : null);
@@ -82,7 +109,7 @@ export default function Page() {
             }
         }
 
-        resolvePlayer();
+        connectFarcaster();
     }, [showSplash]);
 
     // ⏳ Splash
@@ -122,6 +149,18 @@ export default function Page() {
         );
     }
 
-    // 🎮 Start game
-    return <SolitaireGame playerId={playerId} />;
+    // 🎮 Start game + küçük debug info
+    return (
+        <div style={{ textAlign: 'center', color: 'white' }}>
+            <SolitaireGame playerId={playerId} />
+            <div style={{ marginTop: 8, fontSize: '0.8rem', opacity: 0.8 }}>
+                Player: {playerId}
+                {walletAddr && (
+                    <div>
+                        Wallet: {walletAddr.slice(0, 6)}...{walletAddr.slice(-4)}
+                    </div>
+                )}
+            </div>
+        </div>
+    );
 }
