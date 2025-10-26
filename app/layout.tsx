@@ -19,7 +19,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     return (
         <html lang="en">
         <head>
-            {/* 🎯 Farcaster Mini App Manifest */}
+            {/* ✅ temel meta etiketleri */}
+            <meta charSet="utf-8" />
+            <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+            {/* 🎯 Farcaster Mini App Embed Meta */}
             <meta
                 name="fc:miniapp"
                 content={`{
@@ -37,45 +41,44 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             }
           }`}
             />
+
+            {/* ✅ Farcaster Miniapps SDK (UMD) — module kullanılmadan yükleniyor */}
+            <script
+                src="https://cdn.jsdelivr.net/npm/@farcaster/mini-apps-sdk@0.2.2/dist/browser.js"
+                defer
+            ></script>
+
+            {/* ✅ SDK hazır olmasa bile splash’ı otomatik kaldıran fail-safe */}
             <script
                 dangerouslySetInnerHTML={{
                     __html: `
-(function(){
-  function hasSDK() {
-    try {
-      return !!(window.farcaster && window.farcaster.miniapp && window.farcaster.miniapp.actions);
-    } catch (e) { return false; }
-  }
+              (function () {
+                function callReady() {
+                  try {
+                    const fc = window.farcaster?.miniapp?.actions;
+                    if (fc && typeof fc.ready === 'function') {
+                      fc.ready();
+                      return true;
+                    }
+                  } catch (e) {}
+                  return false;
+                }
 
-  async function callReady() {
-    try {
-      if (hasSDK()) {
-        await window.farcaster.miniapp.actions.ready();
-        console.log("[MiniApp] called actions.ready()");
-        return true;
-      }
-    } catch(e) {
-      console.warn("[MiniApp] ready() error:", e);
-    }
-    return false;
-  }
+                document.addEventListener('DOMContentLoaded', function () {
+                  if (callReady()) return;
+                  var tries = 0;
+                  var iv = setInterval(function () {
+                    tries++;
+                    if (callReady() || tries > 20) clearInterval(iv);
+                  }, 150);
+                });
 
-  // DOM yüklendiğinde ve kısa bir süre boyunca SDK'yı bekle
-  document.addEventListener('DOMContentLoaded', function(){
-    let tries = 0;
-    const iv = setInterval(async () => {
-      tries++;
-      if (await callReady() || tries > 30) clearInterval(iv);
-    }, 150);
-  });
-
-  // En kötü senaryo: 5sn sonra da bir kere daha dene
-  setTimeout(callReady, 5000);
-})();
-    `,
+                // 3 sn sonra hâlâ splash açıksa zorla kapat
+                setTimeout(callReady, 3000);
+              })();
+            `,
                 }}
             />
-
         </head>
         <body>{children}</body>
         </html>

@@ -1,111 +1,56 @@
 'use client';
-import { useEffect, useState } from 'react';
+
+import { useState, useEffect } from 'react';
 import SplashScreen from './components/SplashScreen';
 import SolitaireGame from './components/SolitaireGame';
 
 export default function Page() {
     const [showSplash, setShowSplash] = useState(true);
-    const [farcasterUser, setFarcasterUser] = useState<string | null>(null);
-    const [connecting, setConnecting] = useState(false);
-    const [debug, setDebug] = useState('⏳ Initializing...');
+    const [playerId, setPlayerId] = useState<string | null>(null);
 
-    // Splash
     useEffect(() => {
-        const timer = setTimeout(() => setShowSplash(false), 2500);
-        return () => clearTimeout(timer);
-    }, []);
+        if (showSplash) return;
 
-    // 🔹 SDK bekleme ve otomatik bağlanma
-    useEffect(() => {
-        const initFarcaster = async () => {
-            setDebug('🕐 Checking for SDK...');
-            const start = Date.now();
-            let sdk: any = null;
-
-            // 6 saniyeye kadar dene
-            while (Date.now() - start < 6000) {
-                const candidate = (window as any)?.farcaster?.miniapp;
-                if (candidate?.actions?.ready) {
-                    sdk = candidate;
-                    break;
-                }
-                await new Promise((r) => setTimeout(r, 200));
-            }
-
-            if (!sdk) {
-                // SDK hiç bulunmadı
-                setDebug('⚠️ SDK not found, running in mock mode');
-                setFarcasterUser('preview_user');
-                return;
-            }
-
+        // SDK üzerinden kullanıcıyı çekmeyi dene
+        async function resolvePlayer() {
             try {
-                await sdk.actions.ready();
-                setDebug('✅ SDK ready, fetching context...');
-                const ctx = await sdk.context.getUser?.();
-                console.log('📦 Farcaster context:', ctx);
-                if (ctx?.username) setFarcasterUser(ctx.username);
-                else if (ctx?.fid) setFarcasterUser(`fid:${ctx.fid}`);
-                else setFarcasterUser('anonymous');
-                setDebug('✅ User connected');
-            } catch (err) {
-                console.error('❌ SDK error:', err);
-                setDebug('❌ SDK ready but context fetch failed');
-                setFarcasterUser('anonymous');
+                // Miniapps SDK global: window.farcaster.miniapp
+                const mini = (window as any)?.farcaster?.miniapp;
+                if (mini?.context?.getUser) {
+                    const user = await mini.context.getUser();
+                    // user: { fid, username, displayName, ... } şeklinde gelir
+                    if (user?.fid) {
+                        setPlayerId(user.username ? `@${user.username}` : `fid:${user.fid}`);
+                        return;
+                    }
+                }
+
+                // Eski/fallback yol: bazı istemciler window.farcaster.user taşır
+                const legacy = (window as any)?.farcaster?.user;
+                if (legacy?.fid) {
+                    setPlayerId(legacy.username ? `@${legacy.username}` : `fid:${legacy.fid}`);
+                    return;
+                }
+
+                // Olmadı, guest
+                setPlayerId('@guest');
+            } catch {
+                setPlayerId('@guest');
             }
-        };
+        }
 
-        // 2 sn sonra denemeye başla
-        const timer = setTimeout(initFarcaster, 2000);
-        return () => clearTimeout(timer);
-    }, []);
+        resolvePlayer();
+    }, [showSplash]);
 
-    // Splash gösterimi
     if (showSplash) return <SplashScreen onFinish={() => setShowSplash(false)} />;
 
-    // Eğer henüz bağlanmadıysa
-    if (!farcasterUser) {
+    if (!playerId) {
         return (
-            <div
-                style={{
-                    background: '#043011',
-                    color: 'white',
-                    height: '100vh',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    fontFamily: 'Inter, sans-serif',
-                    textAlign: 'center',
-                    padding: '20px',
-                }}
-            >
-                <h2>Solitaire 🎮</h2>
-                <p style={{ opacity: 0.8 }}>Checking Farcaster connection...</p>
-                <div style={{ fontSize: '0.8rem', opacity: 0.6, marginTop: 10 }}>{debug}</div>
-            </div>
+            <p style={{ color: 'white', textAlign: 'center', marginTop: '40vh' }}>
+                Connecting...
+            </p>
         );
     }
 
-    // ✅ Kullanıcı bulundu, oyunu başlat
-    return (
-        <>
-            <SolitaireGame playerId={farcasterUser} />
-            <div
-                style={{
-                    position: 'fixed',
-                    bottom: '8px',
-                    left: '8px',
-                    fontSize: '0.75rem',
-                    background: 'rgba(0,0,0,0.5)',
-                    padding: '4px 8px',
-                    borderRadius: '6px',
-                    opacity: 0.6,
-                    zIndex: 999,
-                }}
-            >
-                {debug}
-            </div>
-        </>
-    );
+    return <SolitaireGame playerId={playerId} />;
 }
