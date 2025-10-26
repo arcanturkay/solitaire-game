@@ -22,12 +22,12 @@ export default function SplashScreen({ onFinish }: { onFinish: () => void }) {
             }}
         >
             <img
-                src="/splash-200.png"
+                src="https://solitaire-game-chi-gules.vercel.app/splash-200.png"
                 alt="Solitaire logo"
-                style={{ width: 100, height: 100, marginBottom: 20 }}
+                style={{width: 100, height: 100, marginBottom: 20}}
             />
-            <h2 style={{ fontSize: '1.6rem', fontWeight: '600' }}>Solitaire</h2>
-            <p style={{ opacity: 0.8 }}>loading...</p>
+            <h2 style={{fontSize: '1.6rem', fontWeight: '600'}}>Solitaire</h2>
+            <p style={{opacity: 0.8}}>loading...</p>
         </div>
     );
 }
