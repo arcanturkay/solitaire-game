@@ -3,7 +3,9 @@ import { useEffect } from 'react';
 
 export default function SplashScreen({ onFinish }: { onFinish: () => void }) {
     useEffect(() => {
-        const timer = setTimeout(() => onFinish(), 2500); // 2.5 saniye sonra oyuna geç
+        const timer = setTimeout(() => {
+            if (typeof onFinish === 'function') onFinish();
+        }, 2500);
         return () => clearTimeout(timer);
     }, [onFinish]);
 
@@ -27,14 +29,14 @@ export default function SplashScreen({ onFinish }: { onFinish: () => void }) {
                 src="https://solitaire-game-chi-gules.vercel.app/splash-200.png"
                 alt="Solitaire logo"
                 style={{
-                    width: 120,
-                    height: 120,
+                    width: 100,
+                    height: 100,
                     marginBottom: 20,
-                    filter: 'drop-shadow(0 0 8px rgba(255,255,255,0.2))',
+                    filter: 'drop-shadow(0 0 10px rgba(255,255,255,0.4))'
                 }}
             />
-            <h2 style={{ fontSize: '1.8rem', fontWeight: '600', margin: 0 }}>Solitaire</h2>
-            <p style={{ opacity: 0.85, fontSize: '1.1rem', marginTop: 8 }}>Loading...</p>
+            <h2 style={{fontSize: '1.8rem', fontWeight: '600', margin: 0}}>Solitaire</h2>
+            <p style={{opacity: 0.85, fontSize: '1.1rem', marginTop: 8}}>Loading...</p>
         </div>
     );
 }

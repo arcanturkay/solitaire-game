@@ -1,95 +1,68 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import SplashScreen from './components/SplashScreen'; // yolun doğru olduğundan emin ol
 import SolitaireGame from './components/SolitaireGame';
 
 export default function Page() {
+    const [showSplash, setShowSplash] = useState(true);
     const [farcasterUser, setFarcasterUser] = useState<string | null>(null);
-    const [loading, setLoading] = useState(true);
+    const [loadingCtx, setLoadingCtx] = useState(true);
 
     useEffect(() => {
-        async function fetchFarcasterContext() {
-            try {
+        // Splash bittikten sonra Farcaster context’i çek
+        if (!showSplash) {
+            const fetchCtx = async () => {
                 const sdk = (window as any)?.farcaster?.miniapp;
-                if (!sdk || !sdk.context) {
-                    console.warn('⚠️ Farcaster SDK not detected — falling back to guest mode');
-                    setFarcasterUser('@guest');
-                    setLoading(false);
+                if (!sdk?.context) {
+                    setLoadingCtx(false);
                     return;
                 }
-
-                const context = await sdk.context.getUser();
-                console.log('👤 Farcaster context:', context);
-
-                if (context?.username) setFarcasterUser(context.username);
-                else if (context?.fid) setFarcasterUser(`fid:${context.fid}`);
-                else setFarcasterUser('@guest');
-            } catch (err) {
-                console.error('❌ Failed to get Farcaster user:', err);
-                setFarcasterUser('@guest');
-            } finally {
-                setLoading(false);
-            }
+                try {
+                    const ctx = await sdk.context.getUser();
+                    if (ctx?.username) setFarcasterUser(ctx.username);
+                    else if (ctx?.fid) setFarcasterUser(`fid:${ctx.fid}`);
+                    else setFarcasterUser(null);
+                } catch {
+                    setFarcasterUser(null);
+                } finally {
+                    setLoadingCtx(false);
+                }
+            };
+            fetchCtx();
         }
+    }, [showSplash]);
 
-        // SDK'nın yüklenmesi için 2.5s bekle
-        const timer = setTimeout(fetchFarcasterContext, 2500);
-        return () => clearTimeout(timer);
-    }, []);
+    // 1) Splash göster
+    if (showSplash) {
+        return <SplashScreen onFinish={() => setShowSplash(false)} key="splash" />;
+    }
 
-    // 🟩 Splash / Loading ekranı
-    if (loading) {
+    // 2) Splash sonrası Farcaster context’i yükleniyorsa
+    if (loadingCtx) {
         return (
-            <div
-                style={{
-                    background: '#08401B',
-                    color: 'white',
-                    height: '100vh',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    fontFamily: 'Inter, sans-serif',
-                }}
-            >
-                <img
-                    src="/splash-200.png"
-                    alt="Solitaire splash"
-                    style={{ width: 100, height: 100, marginBottom: 20 }}
-                />
-                <h2 style={{ fontSize: '1.6rem' }}>Solitaire</h2>
-                <p>Loading...</p>
+            <div style={{
+                background:'#043011',color:'white',height:'100vh',display:'flex',
+                flexDirection:'column',alignItems:'center',justifyContent:'center',fontFamily:'sans-serif'
+            }}>
+                <p>Loading Farcaster...</p>
             </div>
         );
     }
 
-    // 🚫 Warpcast dışında açılırsa uyarı
-    if (!farcasterUser || farcasterUser === '@guest') {
+    // 3) Farcaster yoksa (Warpcast dışında açılmışsa)
+    if (!farcasterUser) {
         return (
-            <div
-                style={{
-                    background: '#043011',
-                    color: 'white',
-                    height: '100vh',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    fontFamily: 'Inter, sans-serif',
-                    textAlign: 'center',
-                    padding: '20px',
-                }}
-            >
-                <h2>⚠️ Please open inside Warpcast</h2>
-                <p>This mini app only works with Farcaster SDK context.</p>
+            <div style={{
+                background:'#043011',color:'white',height:'100vh',display:'flex',flexDirection:'column',
+                alignItems:'center',justifyContent:'center',fontFamily:'sans-serif',textAlign:'center',padding:'20px'
+            }}>
+                <h2>⚠️ Please open in Farcaster</h2>
+                <p>This game only works inside Warpcast.</p>
             </div>
         );
     }
 
-    // ✅ Farcaster kimliği başarıyla alındıysa
-    return (
-        <div>
-            <SolitaireGame playerId={farcasterUser} />
-        </div>
-    );
+    // 4) Oyun
+    return <SolitaireGame playerId={farcasterUser} />;
 }

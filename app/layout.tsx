@@ -1,4 +1,6 @@
-import '../styles/solitaire.css';
+// app/layout.tsx
+import "./globals.css";
+
 export const metadata = {
     title: "Solitaire Game",
     description: "Play Solitaire directly inside Farcaster 🎮",
@@ -20,11 +22,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     return (
         <html lang="en">
         <head>
-            <meta charSet="UTF-8" />
-            <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-            <meta name="theme-color" content="#08401b" />
-
-            {/* 🎯 Farcaster MiniApp Embed */}
             <meta
                 name="fc:miniapp"
                 content={`{
@@ -37,19 +34,18 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                 "name": "Solitaire Game",
                 "url": "https://solitaire-game-chi-gules.vercel.app",
                 "splashImageUrl": "https://solitaire-game-chi-gules.vercel.app/splash-200.png",
-                "splashBackgroundColor": "#08401b"
+                "splashBackgroundColor": "#08401B"
               }
             }
           }`}
             />
-
-            {/* ✅ Farcaster SDK (npm yok → CDN UMD build) */}
+            {/* Farcaster SDK (async değil, defer) */}
             <script
                 src="https://cdn.jsdelivr.net/npm/@farcaster/mini-apps-sdk@0.2.2/dist/browser.js"
-                defer
-            ></script>
-
-            {/* ✅ Ready() çağrısı + splash fallback */}
+                async={false}
+                defer={false}
+            />
+            {/* SDK hazır olunca splash kaldır */}
             <script
                 dangerouslySetInnerHTML={{
                     __html: `
@@ -58,13 +54,12 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                   try {
                     if(window.farcaster?.miniapp?.actions?.ready){
                       window.farcaster.miniapp.actions.ready();
-                      console.log("✅ Farcaster MiniApp ready()");
+                      console.log("✅ Farcaster SDK ready()");
                       return true;
                     }
                   } catch(e){}
                   return false;
                 }
-
                 document.addEventListener("DOMContentLoaded", ()=>{
                   if (markReady()) return;
                   let tries = 0;
@@ -72,14 +67,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                     if (markReady() || ++tries > 25) clearInterval(iv);
                   }, 150);
                 });
-
-                // En geç 4 saniye sonra fallback ready
                 setTimeout(markReady, 4000);
               })();
             `,
                 }}
             />
-
         </head>
         <body>{children}</body>
         </html>
