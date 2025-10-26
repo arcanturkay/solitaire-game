@@ -1,3 +1,4 @@
+import '../styles/solitaire.css';
 export const metadata = {
     title: "Solitaire Game",
     description: "Play Solitaire directly inside Farcaster 🎮",
@@ -19,11 +20,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     return (
         <html lang="en">
         <head>
-            {/* ✅ temel meta etiketleri */}
-            <meta charSet="utf-8" />
+            <meta charSet="UTF-8" />
             <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+            <meta name="theme-color" content="#08401b" />
 
-            {/* 🎯 Farcaster Mini App Embed Meta */}
+            {/* 🎯 Farcaster MiniApp Embed */}
             <meta
                 name="fc:miniapp"
                 content={`{
@@ -36,49 +37,49 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                 "name": "Solitaire Game",
                 "url": "https://solitaire-game-chi-gules.vercel.app",
                 "splashImageUrl": "https://solitaire-game-chi-gules.vercel.app/splash-200.png",
-                "splashBackgroundColor": "#08401B"
+                "splashBackgroundColor": "#08401b"
               }
             }
           }`}
             />
 
-            {/* ✅ Farcaster Miniapps SDK (UMD) — module kullanılmadan yükleniyor */}
+            {/* ✅ Farcaster SDK (npm yok → CDN UMD build) */}
             <script
                 src="https://cdn.jsdelivr.net/npm/@farcaster/mini-apps-sdk@0.2.2/dist/browser.js"
                 defer
             ></script>
 
-            {/* ✅ SDK hazır olmasa bile splash’ı otomatik kaldıran fail-safe */}
+            {/* ✅ Ready() çağrısı + splash fallback */}
             <script
                 dangerouslySetInnerHTML={{
                     __html: `
-              (function () {
-                function callReady() {
+              (function(){
+                function markReady(){
                   try {
-                    const fc = window.farcaster?.miniapp?.actions;
-                    if (fc && typeof fc.ready === 'function') {
-                      fc.ready();
+                    if(window.farcaster?.miniapp?.actions?.ready){
+                      window.farcaster.miniapp.actions.ready();
+                      console.log("✅ Farcaster MiniApp ready()");
                       return true;
                     }
-                  } catch (e) {}
+                  } catch(e){}
                   return false;
                 }
 
-                document.addEventListener('DOMContentLoaded', function () {
-                  if (callReady()) return;
-                  var tries = 0;
-                  var iv = setInterval(function () {
-                    tries++;
-                    if (callReady() || tries > 20) clearInterval(iv);
+                document.addEventListener("DOMContentLoaded", ()=>{
+                  if (markReady()) return;
+                  let tries = 0;
+                  const iv = setInterval(()=>{
+                    if (markReady() || ++tries > 25) clearInterval(iv);
                   }, 150);
                 });
 
-                // 3 sn sonra hâlâ splash açıksa zorla kapat
-                setTimeout(callReady, 3000);
+                // En geç 4 saniye sonra fallback ready
+                setTimeout(markReady, 4000);
               })();
             `,
                 }}
             />
+
         </head>
         <body>{children}</body>
         </html>

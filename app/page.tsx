@@ -1,99 +1,95 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import SplashScreen from './components/SplashScreen';
+import { useEffect, useState } from 'react';
 import SolitaireGame from './components/SolitaireGame';
 
 export default function Page() {
-    const [showSplash, setShowSplash] = useState(true);
-    const [player, setPlayer] = useState<{ fid: number; username: string; wallet?: string } | null>(null);
-    const [notInFarcaster, setNotInFarcaster] = useState(false);
+    const [farcasterUser, setFarcasterUser] = useState<string | null>(null);
+    const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        if (showSplash) return;
-
-        async function getFarcasterIdentity() {
+        async function fetchFarcasterContext() {
             try {
-                const fc = (window as any).farcaster?.miniapp;
-                if (!fc?.context?.getUser) {
-                    setNotInFarcaster(true);
+                const sdk = (window as any)?.farcaster?.miniapp;
+                if (!sdk || !sdk.context) {
+                    console.warn('⚠️ Farcaster SDK not detected — falling back to guest mode');
+                    setFarcasterUser('@guest');
+                    setLoading(false);
                     return;
                 }
 
-                const user = await fc.context.getUser();
-                if (!user?.fid) {
-                    setNotInFarcaster(true);
-                    return;
-                }
+                const context = await sdk.context.getUser();
+                console.log('👤 Farcaster context:', context);
 
-                // ✅ Farcaster ID ve Wallet adresi (ilk verification)
-                const wallet = Array.isArray(user.verifications) && user.verifications.length > 0
-                    ? user.verifications[0]
-                    : undefined;
-
-                setPlayer({
-                    fid: user.fid,
-                    username: user.username ? `@${user.username}` : `fid:${user.fid}`,
-                    wallet,
-                });
+                if (context?.username) setFarcasterUser(context.username);
+                else if (context?.fid) setFarcasterUser(`fid:${context.fid}`);
+                else setFarcasterUser('@guest');
             } catch (err) {
-                console.warn('❌ Farcaster identity fetch failed', err);
-                setNotInFarcaster(true);
+                console.error('❌ Failed to get Farcaster user:', err);
+                setFarcasterUser('@guest');
+            } finally {
+                setLoading(false);
             }
         }
 
-        getFarcasterIdentity();
-    }, [showSplash]);
+        // SDK'nın yüklenmesi için 2.5s bekle
+        const timer = setTimeout(fetchFarcasterContext, 2500);
+        return () => clearTimeout(timer);
+    }, []);
 
-    // splash ekranı
-    if (showSplash) return <SplashScreen onFinish={() => setShowSplash(false)} />;
-
-    // Farcaster dışı uyarısı
-    if (notInFarcaster)
+    // 🟩 Splash / Loading ekranı
+    if (loading) {
         return (
             <div
                 style={{
+                    background: '#08401B',
+                    color: 'white',
                     height: '100vh',
                     display: 'flex',
                     flexDirection: 'column',
-                    justifyContent: 'center',
                     alignItems: 'center',
-                    background: 'radial-gradient(circle at center, #0A5323 30%, #043011 100%)',
-                    color: 'white',
-                    textAlign: 'center',
-                    fontFamily: 'sans-serif',
-                    padding: 20,
+                    justifyContent: 'center',
+                    fontFamily: 'Inter, sans-serif',
                 }}
             >
-                <h2>⚠️ Please open in Farcaster</h2>
-                <p style={{ opacity: 0.8 }}>This game only works inside Warpcast.</p>
+                <img
+                    src="/splash-200.png"
+                    alt="Solitaire splash"
+                    style={{ width: 100, height: 100, marginBottom: 20 }}
+                />
+                <h2 style={{ fontSize: '1.6rem' }}>Solitaire</h2>
+                <p>Loading...</p>
             </div>
         );
+    }
 
-    if (!player)
-        return <p style={{ color: 'white', textAlign: 'center', marginTop: '40vh' }}>Connecting...</p>;
-
-    // Oyuna geç — Farcaster kimlik + wallet bilgisiyle
-    return (
-        <>
-            <SolitaireGame playerId={player.username} />
+    // 🚫 Warpcast dışında açılırsa uyarı
+    if (!farcasterUser || farcasterUser === '@guest') {
+        return (
             <div
                 style={{
-                    position: 'fixed',
-                    bottom: 8,
-                    right: 10,
-                    fontSize: '0.75rem',
-                    opacity: 0.8,
+                    background: '#043011',
                     color: 'white',
+                    height: '100vh',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontFamily: 'Inter, sans-serif',
+                    textAlign: 'center',
+                    padding: '20px',
                 }}
             >
-                👤 {player.username}
-                {player.wallet && (
-                    <div style={{ fontSize: '0.7rem', color: '#b8ffc8' }}>
-                        {player.wallet.slice(0, 6)}…{player.wallet.slice(-4)}
-                    </div>
-                )}
+                <h2>⚠️ Please open inside Warpcast</h2>
+                <p>This mini app only works with Farcaster SDK context.</p>
             </div>
-        </>
+        );
+    }
+
+    // ✅ Farcaster kimliği başarıyla alındıysa
+    return (
+        <div>
+            <SolitaireGame playerId={farcasterUser} />
+        </div>
     );
 }
