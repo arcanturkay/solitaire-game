@@ -9,6 +9,21 @@ export default function Page() {
     const [playerId, setPlayerId] = useState<string | null>(null);
     const [error, setError] = useState<string | null>(null);
 
+    // ✅ Farcaster splash'ı manuel kapat (green screen fix)
+    useEffect(() => {
+        try {
+            const fc = (window as any)?.farcaster?.miniapp?.actions;
+            if (fc && typeof fc.ready === 'function') {
+                fc.ready();
+                console.log('✅ Farcaster SDK ready() called manually (splash closed)');
+            } else {
+                console.warn('⚠️ Farcaster ready() not found yet.');
+            }
+        } catch (e) {
+            console.warn('⚠️ Farcaster ready() call failed:', e);
+        }
+    }, []);
+
     useEffect(() => {
         if (showSplash) return;
 
@@ -16,7 +31,7 @@ export default function Page() {
             try {
                 console.log('🟣 Checking for Farcaster SDK...');
 
-                // ✅ Wait up to 2s for Farcaster MiniApp SDK
+                // ✅ Wait up to 2s for SDK to be ready
                 await new Promise<void>((resolve) => {
                     let elapsed = 0;
                     const interval = setInterval(() => {
@@ -32,7 +47,7 @@ export default function Page() {
                 const fc = (window as any)?.farcaster?.miniapp;
                 let user: any = null;
 
-                // ✅ Try modern SDK
+                // ✅ Modern SDK
                 if (fc?.context?.getUser) {
                     console.log('✅ Detected Farcaster MiniApp SDK (modern)');
                     user = await fc.context.getUser().catch((err: any) => {
@@ -41,13 +56,13 @@ export default function Page() {
                     });
                 }
 
-                // ✅ Try legacy path
+                // ✅ Legacy fallback
                 if (!user && (window as any)?.farcaster?.user) {
                     console.log('⚙️ Using legacy Farcaster SDK (window.farcaster.user)');
                     user = (window as any).farcaster.user;
                 }
 
-                // ✅ Log what we got
+                // ✅ Log fetched user
                 console.log('📦 Farcaster user object:', user);
 
                 if (user?.fid) {
