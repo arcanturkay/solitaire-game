@@ -9,37 +9,74 @@ export default function Page() {
     const [connecting, setConnecting] = useState(false);
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-    // 🕐 Splash ekranda 2.5sn kalır
+    // Splash ekranı (2.5 saniye)
     useEffect(() => {
         const timer = setTimeout(() => setShowSplash(false), 2500);
         return () => clearTimeout(timer);
     }, []);
 
-    // ✅ SDK’yı bekle ve hazır olduğunda dön
-    const waitForSDK = async (retries = 20, delay = 150): Promise<any | null> => {
-        for (let i = 0; i < retries; i++) {
-            const sdk = (window as any)?.farcaster?.miniapp;
-            if (sdk?.context) {
-                // Splash ekranı kaldır
-                if (sdk?.actions?.ready) {
-                    sdk.actions.ready();
-                    console.log('✅ Farcaster MiniApp ready() called.');
-                }
-                return sdk;
-            }
-            await new Promise((res) => setTimeout(res, delay));
-        }
-        return null;
-    };
+    // Warpcast SDK hazır olunca splash'ı kapatır
+    useEffect(() => {
+        const waitForSDK = async () => {
+            const start = Date.now();
+            return new Promise<boolean>((resolve) => {
+                const check = () => {
+                    const hasSDK =
+                        (window as any)?.farcaster?.miniapp?.actions &&
+                        (window as any)?.farcaster?.miniapp?.context;
+                    if (hasSDK) return resolve(true);
+                    if (Date.now() - start > 4000) return resolve(false);
+                    setTimeout(check, 120);
+                };
+                check();
+            });
+        };
 
+        (async () => {
+            const ok = await waitForSDK();
+            if (ok) {
+                try {
+                    await (window as any).farcaster.miniapp.actions.ready();
+                    console.log('✅ sdk.actions.ready() triggered (page.tsx)');
+                } catch (e) {
+                    console.warn('⚠️ ready() call failed:', e);
+                }
+            } else {
+                console.warn('⚠️ Farcaster SDK not found after timeout');
+            }
+        })();
+    }, []);
+
+    // Farcaster bağlantısı
     const connectFarcaster = async () => {
         setConnecting(true);
         setErrorMessage(null);
 
         try {
-            const sdk = await waitForSDK();
-            if (!sdk) throw new Error('Farcaster SDK not detected. Please open in Warpcast.');
+            // 1️⃣ SDK'nın yüklenmesini bekle
+            const ok = await new Promise<boolean>((resolve) => {
+                let waited = 0;
+                const iv = setInterval(() => {
+                    waited += 100;
+                    const sdk = (window as any)?.farcaster?.miniapp;
+                    if (sdk?.context) {
+                        clearInterval(iv);
+                        resolve(true);
+                    } else if (waited > 4000) {
+                        clearInterval(iv);
+                        resolve(false);
+                    }
+                }, 100);
+            });
 
+            if (!ok) throw new Error('Farcaster SDK not detected. Please open in Warpcast.');
+
+            const sdk = (window as any).farcaster.miniapp;
+            try {
+                await sdk.actions.ready(); // ready() idempotent
+            } catch {}
+
+            // 2️⃣ Kullanıcıyı al
             const context = await sdk.context.getUser();
             console.log('✅ Farcaster context:', context);
 
@@ -55,10 +92,10 @@ export default function Page() {
         }
     };
 
-    // 🟩 Splash ekranı
+    // Splash gösterimi
     if (showSplash) return <SplashScreen onFinish={() => setShowSplash(false)} />;
 
-    // 🔵 Farcaster kullanıcı yoksa “Play Now” ekranı
+    // Bağlanmamış kullanıcı
     if (!farcasterUser) {
         return (
             <div
@@ -154,6 +191,6 @@ export default function Page() {
         );
     }
 
-    // ✅ Kullanıcı bağlandıysa oyuna geç
+    // Oyunu yükle
     return <SolitaireGame playerId={farcasterUser} />;
 }

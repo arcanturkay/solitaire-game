@@ -19,7 +19,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     return (
         <html lang="en">
         <head>
-            {/* 🎯 Farcaster Mini App Embed Meta */}
+            {/* 🎯 Farcaster Mini App Manifest */}
             <meta
                 name="fc:miniapp"
                 content={`{
@@ -32,49 +32,50 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                 "name": "Solitaire Game",
                 "url": "https://solitaire-game-chi-gules.vercel.app",
                 "splashImageUrl": "https://solitaire-game-chi-gules.vercel.app/splash-200.png",
-                "splashBackgroundColor": "#043011"
+                "splashBackgroundColor": "#08401B"
               }
             }
           }`}
             />
-
-            {/* ✅ Farcaster SDK (UMD Build) — `defer` ile yüklenir */}
-            <script
-                src="https://cdn.jsdelivr.net/npm/@farcaster/mini-apps-sdk@latest/dist/browser.js"
-                defer
-            ></script>
-
-            {/* ✅ Splash ekranını kaldırmak ve SDK’yı hazır işaretlemek */}
             <script
                 dangerouslySetInnerHTML={{
                     __html: `
-              (function(){
-                function markReady(){
-                  try {
-                    if(window.farcaster?.miniapp?.actions?.ready){
-                      window.farcaster.miniapp.actions.ready();
-                      console.log("✅ Farcaster SDK ready() called");
-                      return true;
-                    }
-                  } catch(e){}
-                  return false;
-                }
+(function(){
+  function hasSDK() {
+    try {
+      return !!(window.farcaster && window.farcaster.miniapp && window.farcaster.miniapp.actions);
+    } catch (e) { return false; }
+  }
 
-                // SDK geldikten sonra ready() çağırmayı dener
-                document.addEventListener("DOMContentLoaded", ()=>{
-                  if (markReady()) return;
-                  let tries = 0;
-                  const iv = setInterval(()=>{
-                    if (markReady() || ++tries > 30) clearInterval(iv);
-                  }, 150);
-                });
+  async function callReady() {
+    try {
+      if (hasSDK()) {
+        await window.farcaster.miniapp.actions.ready();
+        console.log("[MiniApp] called actions.ready()");
+        return true;
+      }
+    } catch(e) {
+      console.warn("[MiniApp] ready() error:", e);
+    }
+    return false;
+  }
 
-                // Yine de en geç 4 saniyede splash'ı kaldır
-                setTimeout(markReady, 4000);
-              })();
-            `,
+  // DOM yüklendiğinde ve kısa bir süre boyunca SDK'yı bekle
+  document.addEventListener('DOMContentLoaded', function(){
+    let tries = 0;
+    const iv = setInterval(async () => {
+      tries++;
+      if (await callReady() || tries > 30) clearInterval(iv);
+    }, 150);
+  });
+
+  // En kötü senaryo: 5sn sonra da bir kere daha dene
+  setTimeout(callReady, 5000);
+})();
+    `,
                 }}
             />
+
         </head>
         <body>{children}</body>
         </html>
