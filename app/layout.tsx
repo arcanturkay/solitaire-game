@@ -46,7 +46,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                 "type": "launch_frame",
                 "name": "Solitaire Game",
                 "url": "https://solitaire-frame.vercel.app",
-                "splashImageUrl": "https://solitaire-frame.vercel.app/splash-200.png",
+                "splashImageUrl": "https://solitaire-frame.vercel.app/splash.png",
                 "splashBackgroundColor": "#08401B"
               }
             }

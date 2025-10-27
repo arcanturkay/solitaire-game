@@ -12,7 +12,7 @@
     ],
     "imageUrl": "https://solitaire-frame.vercel.app/preview.png",
     "heroImageUrl": "https://solitaire-frame.vercel.app/preview.png",
-    "splashImageUrl": "https://solitaire-frame.vercel.app/splash-200.png",
+    "splashImageUrl": "https://solitaire-frame.vercel.app/splash.png",
     "splashBackgroundColor": "#08401B",
     "tags": [
       "game",

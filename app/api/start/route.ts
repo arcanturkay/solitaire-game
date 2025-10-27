@@ -4,7 +4,7 @@ export async function POST() {
     return NextResponse.json({
         frame: {
             version: "1",
-            image: "https://solitaire-frame.vercel.app/splash-200.png",
+            image: "https://solitaire-frame.vercel.app/splash.png",
             button: {
                 title: "Play Solitaire",
                 action: {
