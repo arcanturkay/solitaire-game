@@ -7,7 +7,24 @@ interface SplashScreenProps {
 
 export default function SplashScreen({ onFinish }: SplashScreenProps) {
     useEffect(() => {
-        const timer = setTimeout(() => onFinish(), 2500); // 2.5 seconds then proceed
+        // ✅ MiniApp SDK çağrısı (CDN üzerinden)
+        const tryReady = () => {
+            try {
+                const fc = (window as any).farcaster?.miniapp?.actions;
+                if (fc && typeof fc.ready === 'function') {
+                    fc.ready();
+                    console.log('✅ Farcaster MiniApp: ready() sent');
+                } else {
+                    console.log('🌐 Farcaster SDK not available yet');
+                }
+            } catch (err) {
+                console.log('⚠️ Farcaster SDK error:', err);
+            }
+        };
+
+        // SDK’yı çalıştır ve 2.5 saniye sonra splash’ı kapat
+        tryReady();
+        const timer = setTimeout(() => onFinish(), 2500);
         return () => clearTimeout(timer);
     }, [onFinish]);
 
@@ -22,7 +39,6 @@ export default function SplashScreen({ onFinish }: SplashScreenProps) {
                 background: 'radial-gradient(circle at center, #0A5323 30%, #043011 100%)',
                 color: 'white',
                 fontFamily: 'sans-serif',
-                transition: 'opacity 0.5s ease',
             }}
         >
             <img
