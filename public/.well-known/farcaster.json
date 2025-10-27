@@ -4,29 +4,26 @@
     "version": "1",
     "iconUrl": "https://solitaire-frame.vercel.app/icon.png",
     "homeUrl": "https://solitaire-frame.vercel.app",
-    "subtitle": "Play Solitaire on Farcaster!",
+    "imageUrl": "https://solitaire-frame.vercel.app/image.png",
+    "buttonTitle": "Play Solitaire",
+    "splashImageUrl": "https://solitaire-frame.vercel.app/splash.png",
+    "splashBackgroundColor": "#08401B",
+    "webhookUrl": "https://solitaire-frame.vercel.app/api/webhook",
+    "subtitle": "Play Solitaire on Farcaster!\"",
     "description": "Challenge yourself with the timeless Solitaire game. just fun!",
-    "primaryCategory": "games",
     "screenshotUrls": [
       "https://solitaire-frame.vercel.app/embed-1200x800.png"
     ],
-    "imageUrl": "https://solitaire-frame.vercel.app/preview.png",
-    "heroImageUrl": "https://solitaire-frame.vercel.app/preview.png",
-    "splashImageUrl": "https://solitaire-frame.vercel.app/splash.png",
-    "splashBackgroundColor": "#08401B",
+    "primaryCategory": "games",
     "tags": [
       "game",
       "solitaire",
-      "cards",
       "farcaster",
-      "miniapp"
+      "cards"
     ],
+    "heroImageUrl": "https://solitaire-frame.vercel.app/preview.png",
     "tagline": "Play classic Solitaire",
-    "buttonTitle": "Play Solitaire",
-    "ogDescription": "Challenge your mind with the timeless Solitaire experience now playable directly inside Farcaster.",
-    "ogTitle": "Solitaire Classic Card Game",
-    "ogImageUrl": "https://solitaire-frame.vercel.app/preview.png",
-    "castShareUrl": "https://warpcast.com/~/compose?text=Play+Solitaire+directly+inside+Farcaster+🎮&embeds[]=https://solitaire-frame.vercel.app"
+    "ogImageUrl": "https://solitaire-frame.vercel.app/preview.png"
   },
   "accountAssociation": {
     "header": "eyJmaWQiOjMzMTM1MiwidHlwZSI6ImF1dGgiLCJrZXkiOiIweDI1NmQ2OTkyQkUwRDY5NTZlYTg0MTk4RDYxQTE3MDc1NjcxNTgzNzcifQ",
