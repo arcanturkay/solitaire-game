@@ -11,18 +11,32 @@ export default function Page() {
     const [playerId, setPlayerId] = useState<string>('@guest');
     const [isMiniApp, setIsMiniApp] = useState(false);
 
-    // MiniApp ortamını algıla
+    // 🧭 MiniApp ortamını algıla
     useEffect(() => {
         if (typeof window !== 'undefined') {
             const insideMiniApp =
                 window.location.hostname.includes('wallet.farcaster.xyz') ||
                 window.location.hostname.includes('farcaster.xyz');
+
             setIsMiniApp(insideMiniApp);
-            if (insideMiniApp) console.log('🎮 Farcaster MiniApp detected — starting guest mode');
+
+            // 🧹 her frame yenilendiğinde cache temizle ve splash yeniden göster
+            try {
+                sessionStorage.clear();
+            } catch (e) {}
+
+            // Frame bazlı splash reset — her yeni açılışta 2.5sn splash
+            if (insideMiniApp || window.location.search.includes('frame=')) {
+                setShowSplash(true);
+                setTimeout(() => setShowSplash(false), 2500);
+            }
+
+            if (insideMiniApp)
+                console.log('🎮 Farcaster MiniApp detected — starting guest mode');
         }
     }, []);
 
-    // Kullanıcı kimliğini belirle
+    // 👤 Kullanıcı kimliğini belirle
     useEffect(() => {
         if (!user) return;
         const farcaster = user?.farcaster;
@@ -38,15 +52,15 @@ export default function Page() {
         }
     }, [user]);
 
-    // Splash gösterimi
+    // 🟢 Splash gösterimi
     if (showSplash) return <SplashScreen onFinish={() => setShowSplash(false)} />;
 
-    // Farcaster içindeyse guest olarak başlat
+    // ⚙️ MiniApp içindeyse direkt guest olarak başlat
     if (isMiniApp) {
         return <SolitaireGame playerId={playerId} />;
     }
 
-    // Web ortamında normal Privy akışı
+    // 🌐 Web ortamında Privy kimlik doğrulama akışı
     if (!ready) {
         return (
             <p style={{ color: 'white', textAlign: 'center', marginTop: '40vh' }}>
@@ -64,5 +78,6 @@ export default function Page() {
         );
     }
 
+    // ✅ Auth tamam, oyunu başlat
     return <SolitaireGame playerId={playerId} />;
 }

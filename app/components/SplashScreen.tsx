@@ -7,6 +7,12 @@ interface SplashScreenProps {
 
 export default function SplashScreen({ onFinish }: SplashScreenProps) {
     useEffect(() => {
+        // 🧹 MiniApp yeniden açıldığında olası cache'i temizle
+        try {
+            sessionStorage.clear();
+        } catch (e) {}
+
+        // ✅ Farcaster ready çağrısı
         const callReady = () => {
             try {
                 const fc = (window as any).farcaster?.miniapp?.actions;
@@ -15,24 +21,26 @@ export default function SplashScreen({ onFinish }: SplashScreenProps) {
                     console.log('✅ Farcaster ready() sent');
                     return true;
                 }
-            } catch {}
+            } catch (err) {
+                console.warn('⚠️ Farcaster ready() error', err);
+            }
             return false;
         };
 
-        // İlk deneme + interval
+        // 🔁 150ms aralıklarla SDK'yı bekle
         let tries = 0;
         const interval = setInterval(() => {
             tries++;
-            if (callReady() || tries > 40) clearInterval(interval); // 6sn boyunca dener
+            if (callReady() || tries > 40) clearInterval(interval);
         }, 150);
 
-        // Splash 2.5sn sonra kapanır
+        // ⏱️ 2.5sn sonra splash kapanır
         const timer = setTimeout(() => {
-            callReady(); // garanti için
+            callReady(); // garanti için tekrar
             onFinish();
         }, 2500);
 
-        // Fail-safe: 6sn sonunda yine zorla kapat
+        // 🔒 fail-safe: 6sn sonra yine kapat
         const forceClose = setTimeout(() => onFinish(), 6000);
 
         return () => {
