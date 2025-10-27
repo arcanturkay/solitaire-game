@@ -19,16 +19,25 @@ export default function SplashScreen({ onFinish }: SplashScreenProps) {
         let finished = false;
 
         const initSdk = async () => {
-            if (typeof window === 'undefined' || !window.farcaster) {
-                addLog('⚠️ SDK not ready yet...');
-                return false;
+            if (typeof window === 'undefined') return false;
+
+            // ✅ Farcaster ortamında mı?
+            const isMiniApp =
+                window.location.hostname.includes('wallet.farcaster.xyz') ||
+                window.location.hostname.includes('farcaster.xyz') ||
+                window.location.hostname.includes('warpcast.com');
+
+            if (!isMiniApp || !window.farcaster) {
+                addLog('⚪ SDK unavailable (Web/Local mode)');
+                return true; // web modda direkt devam et
             }
+
             try {
                 await sdk.actions.ready();
                 addLog('✅ sdk.actions.ready() success');
                 return true;
             } catch (err) {
-                addLog('❌ sdk.actions.ready() failed');
+                addLog('⚠️ sdk.actions.ready() failed');
                 return false;
             }
         };
@@ -82,7 +91,7 @@ export default function SplashScreen({ onFinish }: SplashScreenProps) {
             <img
                 src="https://solitaire-game-chi-gules.vercel.app/splash-200.png"
                 alt="Solitaire logo"
-                style={{ width: 100, height: 100, marginBottom: 20 }}
+                style={{ width: 100, height: 100, marginBottom: 20, borderRadius: 12 }}
             />
             <h2 style={{ fontSize: '1.6rem', fontWeight: 600 }}>Solitaire</h2>
             <p style={{ opacity: 0.8 }}>loading...</p>
@@ -100,6 +109,7 @@ export default function SplashScreen({ onFinish }: SplashScreenProps) {
                     fontFamily: 'monospace',
                     color: '#fff',
                     textAlign: 'right',
+                    maxWidth: '90%',
                 }}
             >
                 {logs.map((line, i) => (

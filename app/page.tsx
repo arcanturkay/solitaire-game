@@ -10,8 +10,9 @@ export default function Page() {
     const [showSplash, setShowSplash] = useState(true);
     const [playerId, setPlayerId] = useState<string>('@guest');
     const [isMiniApp, setIsMiniApp] = useState(false);
+    const [walletConnected, setWalletConnected] = useState(false);
 
-    // 🧩 Farcaster MiniApp ortamını algıla
+    // 🧩 MiniApp ortamını algıla
     useEffect(() => {
         if (typeof window !== 'undefined') {
             const insideMiniApp =
@@ -19,21 +20,10 @@ export default function Page() {
                 window.location.hostname.includes('farcaster.xyz') ||
                 window.location.hostname.includes('warpcast.com');
             setIsMiniApp(insideMiniApp);
-
-            // Frame yeniden açıldığında splash'ı sıfırla
-            const onFocus = () => {
-                if (insideMiniApp) {
-                    console.log('🎮 Frame reopened — showing splash again');
-                    setShowSplash(true);
-                    setTimeout(() => setShowSplash(false), 2500);
-                }
-            };
-            window.addEventListener('focus', onFocus);
-            return () => window.removeEventListener('focus', onFocus);
         }
     }, []);
 
-    // 👤 Kullanıcı kimliğini belirle
+    // 👤 Kullanıcı bilgisi
     useEffect(() => {
         if (!user) return;
         const farcaster = user?.farcaster;
@@ -47,17 +37,28 @@ export default function Page() {
         } else {
             setPlayerId('@guest');
         }
+
+        setWalletConnected(!!wallet?.address);
     }, [user]);
 
-    // 🎬 Splash gösterimi
+    // 🎬 Splash ekranı
     if (showSplash) return <SplashScreen onFinish={() => setShowSplash(false)} />;
 
-    // ⚙️ MiniApp ortamı — misafir olarak direkt başlat
+    // ⚙️ MiniApp ortamı — wallet bağlıysa oyunu başlat
     if (isMiniApp) {
-        return <SolitaireGame playerId={playerId} />;
+        if (walletConnected) {
+            return <SolitaireGame playerId={playerId} />;
+        } else {
+            return (
+                <div style={{ color: 'white', textAlign: 'center', marginTop: '40vh' }}>
+                    <h2>Connect your Farcaster wallet to play 🎮</h2>
+                    <ConnectFarcasterButton />
+                </div>
+            );
+        }
     }
 
-    // 🌐 Web ortamı — Privy kimlik doğrulaması
+    // 🌐 Web ortamı — Privy login akışı
     if (!ready) {
         return (
             <p style={{ color: 'white', textAlign: 'center', marginTop: '40vh' }}>

@@ -4,17 +4,17 @@ import { ReactNode, useEffect, useState } from 'react';
 
 export default function Providers({ children }: { children: ReactNode }) {
     const [isClient, setIsClient] = useState(false);
-    const insideMiniApp =
-        window.location.hostname.includes('wallet.farcaster.xyz') ||
-        window.location.hostname.includes('farcaster.xyz') ||
-        window.location.hostname.includes('warpcast.com');
+    const [isMiniApp, setIsMiniApp] = useState(false); // ✅ Eksik state eklendi
 
     useEffect(() => {
-        // ✅ SSR yerine client'ta render edildiğini garanti ediyoruz
+        // ✅ Sadece client tarafında çalıştır
         setIsClient(true);
 
         if (typeof window !== 'undefined') {
-            const insideMiniApp = window.location.hostname.includes('wallet.farcaster.xyz');
+            const insideMiniApp =
+                window.location.hostname.includes('wallet.farcaster.xyz') ||
+                window.location.hostname.includes('farcaster.xyz') ||
+                window.location.hostname.includes('warpcast.com');
             setIsMiniApp(insideMiniApp);
         }
     }, []);
