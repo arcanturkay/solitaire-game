@@ -20,20 +20,11 @@ export default function SplashScreen({ onFinish }: { onFinish: () => void }) {
                 const ctx = await sdk.context;
                 console.log('🟣 Farcaster Context:', ctx);
 
-                if (ctx?.user?.fid || ctx?.fid) {
-                    console.log('✅ Connected FID:', ctx.user?.fid || ctx.fid);
-                    onFinish();
-                    return;
-                }
-
-                // Eğer kullanıcı kimliği yoksa authenticate tetikle
-                console.warn('⚠️ No FID found — triggering authentication...');
-                await sdk.actions.authenticate();
-                const newCtx = await sdk.context;
-                if (newCtx?.user?.fid || newCtx?.fid) {
-                    console.log('✅ Authenticated FID:', newCtx.user?.fid || newCtx.fid);
+                const fid = ctx?.user?.fid;
+                if (fid) {
+                    console.log('✅ Connected FID:', fid);
                 } else {
-                    console.warn('⚠️ Authentication did not return FID');
+                    console.warn('⚠️ No FID found — user not connected yet');
                 }
 
                 onFinish();
@@ -69,9 +60,6 @@ export default function SplashScreen({ onFinish }: { onFinish: () => void }) {
                 height={140}
                 loading="eager"
                 style={{ marginBottom: '20px' }}
-                onError={() =>
-                    console.warn('⚠️ Splash image not found — check /public/splash.png on Vercel')
-                }
             />
             <h2 style={{ fontSize: '1.8rem', margin: 0 }}>Solitaire</h2>
             <p style={{ marginTop: '8px', fontSize: '1rem' }}>loading...</p>

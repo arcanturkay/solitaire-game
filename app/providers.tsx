@@ -1,13 +1,12 @@
 'use client';
-import { PrivyProvider } from '@privy-io/react-auth';
 import { ReactNode, useEffect, useState } from 'react';
 
 export default function Providers({ children }: { children: ReactNode }) {
     const [isClient, setIsClient] = useState(false);
-    const [isMiniApp, setIsMiniApp] = useState(false); // ✅ Eksik state eklendi
+    const [isMiniApp, setIsMiniApp] = useState(false);
 
     useEffect(() => {
-        // ✅ Sadece client tarafında çalıştır
+        // Yalnızca client tarafında çalıştır
         setIsClient(true);
 
         if (typeof window !== 'undefined') {
@@ -19,27 +18,12 @@ export default function Providers({ children }: { children: ReactNode }) {
         }
     }, []);
 
-    // ⛔ SSR veya MiniApp ortamında Privy tamamen bypass edilir
+    // SSR veya MiniApp ortamında direkt çocukları render et
     if (!isClient || isMiniApp) {
-        console.log('⚡ Skipping Privy Provider (SSR or MiniApp mode)');
+        console.log('⚡ Rendering without Privy (SSR or MiniApp mode)');
         return <>{children}</>;
     }
 
-    // ✅ Normal tarayıcı ortamında Privy aktif
-    const appId = process.env.NEXT_PUBLIC_PRIVY_APP_ID || 'cmh942lob00d3l80cnoqq89og';
-
-    return (
-        <PrivyProvider
-            appId={appId}
-            config={{
-                appearance: {
-                    theme: 'dark',
-                    accentColor: '#0A5323',
-                },
-                loginMethods: ['farcaster', 'wallet'],
-            }}
-        >
-            {children}
-        </PrivyProvider>
-    );
+    // Normal tarayıcı ortamında da sadece children render edilir
+    return <>{children}</>;
 }
