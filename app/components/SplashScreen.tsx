@@ -2,6 +2,12 @@
 import { useEffect, useState } from 'react';
 import { sdk } from '@farcaster/miniapp-sdk';
 
+declare global {
+    interface Window {
+        farcaster?: any;
+    }
+}
+
 interface SplashScreenProps {
     onFinish: () => void;
 }

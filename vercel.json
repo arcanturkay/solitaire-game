@@ -1,22 +1,19 @@
 {
   "version": 2,
-  "headers": [
+  "routes": [
     {
-      "source": "/(.*)",
-      "headers": [
-        { "key": "X-Frame-Options", "value": "ALLOWALL" },
-        {
-          "key": "Content-Security-Policy",
-          "value": "frame-ancestors *; script-src * unsafe-inline unsafe-eval; style-src * unsafe-inline; img-src * data: blob:;"
-        }
-      ]
-    }
-  ],
-  "redirects": [
+      "src": "/.well-known/farcaster.json",
+      "headers": {
+        "Location": "https://api.farcaster.xyz/miniapps/hosted-manifest/019a1d44-0b36-b017-fb33-6cf5cd6ac2a0"
+      },
+      "status": 307
+    },
     {
-      "source": "/.well-known/farcaster.json",
-      "destination": "https://api.farcaster.xyz/miniapps/hosted-manifest/019a1d44-0b36-b017-fb33-6cf5cd6ac2a0",
-      "permanent": false
+      "src": "/(.*)",
+      "headers": {
+        "X-Frame-Options": "ALLOWALL",
+        "Content-Security-Policy": "frame-ancestors *; script-src * unsafe-inline unsafe-eval; style-src * unsafe-inline; img-src * data: blob:;"
+      }
     }
   ]
 }
