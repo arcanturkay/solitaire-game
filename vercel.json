@@ -3,7 +3,7 @@
   "routes": [
     {
       "src": "/\\.well-known/farcaster\\.json",
-      "dest": "https://api.farcaster.xyz/miniapps/hosted-manifest/019a1d44-0b36-b017-fb33-6cf5cd6ac2a0",
+      "dest": "https://api.farcaster.xyz/miniapps/hosted-manifest/019a2752-5773-ad89-4f79-4b67097050f0",
       "status": 307
     },
     {
