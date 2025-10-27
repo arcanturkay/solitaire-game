@@ -8,54 +8,71 @@ import ConnectFarcasterButton from './components/ConnectFarcasterButton';
 export default function Page() {
     const { ready, authenticated, user } = usePrivy();
     const [showSplash, setShowSplash] = useState(true);
-    const [playerId, setPlayerId] = useState('@guest');
+    const [playerId, setPlayerId] = useState<string>('@guest');
     const [isMiniApp, setIsMiniApp] = useState(false);
 
+    // 🧩 Farcaster MiniApp ortamını algıla
     useEffect(() => {
         if (typeof window !== 'undefined') {
             const insideMiniApp =
                 window.location.hostname.includes('wallet.farcaster.xyz') ||
                 window.location.hostname.includes('farcaster.xyz');
-
             setIsMiniApp(insideMiniApp);
 
-            // Her yeni frame’de splash göster
-            if (insideMiniApp || window.location.search.includes('frame=')) {
-                sessionStorage.clear();
-                setShowSplash(true);
-                setTimeout(() => setShowSplash(false), 2500);
-            }
+            // Farcaster frame yeniden açıldığında splash'ı sıfırla
+            const onFocus = () => {
+                if (insideMiniApp) {
+                    console.log('🎮 Frame reopened — showing splash again');
+                    setShowSplash(true);
+                    setTimeout(() => setShowSplash(false), 2500);
+                }
+            };
+            window.addEventListener('focus', onFocus);
+            return () => window.removeEventListener('focus', onFocus);
         }
     }, []);
 
+    // 👤 Kullanıcı kimliğini belirle
     useEffect(() => {
         if (!user) return;
         const farcaster = user?.farcaster;
         const wallet = user?.wallet;
-        if (farcaster?.username) setPlayerId(`@${farcaster.username}`);
-        else if (wallet?.address)
-            setPlayerId(`${wallet.address.slice(0, 6)}...${wallet.address.slice(-4)}`);
-        else setPlayerId('@guest');
+
+        if (farcaster?.username) {
+            setPlayerId(`@${farcaster.username}`);
+        } else if (wallet?.address) {
+            const shortWallet = `${wallet.address.slice(0, 6)}...${wallet.address.slice(-4)}`;
+            setPlayerId(shortWallet);
+        } else {
+            setPlayerId('@guest');
+        }
     }, [user]);
 
+    // 🎬 Splash gösterimi (MiniApp veya Web farketmez)
     if (showSplash) return <SplashScreen onFinish={() => setShowSplash(false)} />;
 
-    if (isMiniApp) return <SolitaireGame playerId={playerId} />;
+    // ⚙️ MiniApp ortamında misafir olarak başlat
+    if (isMiniApp) {
+        return <SolitaireGame playerId={playerId} />;
+    }
 
-    if (!ready)
+    // 🌐 Web ortamı — Privy akışı
+    if (!ready) {
         return (
             <p style={{ color: 'white', textAlign: 'center', marginTop: '40vh' }}>
                 Loading authentication...
             </p>
         );
+    }
 
-    if (!authenticated)
+    if (!authenticated) {
         return (
             <div style={{ color: 'white', textAlign: 'center', marginTop: '40vh' }}>
                 <h2>Connect your Farcaster account to play 🎮</h2>
                 <ConnectFarcasterButton />
             </div>
         );
+    }
 
     return <SolitaireGame playerId={playerId} />;
 }

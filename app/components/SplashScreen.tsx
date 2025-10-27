@@ -1,88 +1,79 @@
 'use client';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
+import { sdk } from '@farcaster/miniapp-sdk';
 
 interface SplashScreenProps {
     onFinish: () => void;
 }
 
-// 🧩 SDK Manuel Loader
-const loadFarcasterSDK = async () => {
-    if (typeof window === 'undefined') return;
-    const w = window as any;
-    if (w.farcaster?.miniapp?.actions) return; // zaten yüklü
-
-    return new Promise<void>((resolve, reject) => {
-        const script = document.createElement('script');
-        script.src = 'https://cdn.farcaster.xyz/mini-apps-sdk@0.2.2/dist/browser.js';
-        script.async = true;
-        script.onload = () => {
-            console.log('✅ Farcaster MiniApp SDK loaded');
-            resolve();
-        };
-        script.onerror = () => {
-            console.error('❌ Failed to load Farcaster SDK');
-            reject();
-        };
-        document.head.appendChild(script);
-    });
-};
-
 export default function SplashScreen({ onFinish }: SplashScreenProps) {
-    useEffect(() => {
-        let closed = false;
+    const [visible, setVisible] = useState(true);
+    const [logs, setLogs] = useState<string[]>([]);
 
-        const callReady = () => {
+    const addLog = (msg: string) => {
+        console.log(msg);
+        setLogs((prev) => [...prev.slice(-4), msg]);
+    };
+
+    useEffect(() => {
+        let finished = false;
+
+        const callReady = async () => {
             try {
-                const fc = (window as any).farcaster?.miniapp?.actions;
-                if (fc && typeof fc.ready === 'function') {
-                    fc.ready();
-                    console.log('✅ Farcaster ready() called');
-                    return true;
-                }
-            } catch (e) {
-                console.warn('⚠️ ready() error', e);
+                await sdk.actions.ready();
+                addLog('✅ sdk.actions.ready() called successfully');
+                return true;
+            } catch (err) {
+                addLog('⚠️ sdk.actions.ready() failed');
+                console.warn('sdk ready error:', err);
+                return false;
             }
-            return false;
         };
 
         const start = async () => {
-            await loadFarcasterSDK();
+            // Deneme döngüsü (6sn boyunca)
             let tries = 0;
             const iv = setInterval(() => {
                 tries++;
-                if (callReady() || tries > 40) clearInterval(iv);
+                callReady();
+                if (tries > 40) clearInterval(iv);
             }, 150);
 
-            // 2.5s sonra kapanır
-            const timer = setTimeout(() => {
-                if (!closed) {
+            const t1 = setTimeout(() => {
+                if (!finished) {
+                    addLog('⏱️ Auto close after 2.5s');
                     callReady();
+                    setVisible(false);
                     onFinish();
-                    closed = true;
+                    finished = true;
                 }
             }, 2500);
 
-            // Fail-safe: 6s sonra yine kapat
-            const force = setTimeout(() => {
-                if (!closed) {
+            const t2 = setTimeout(() => {
+                if (!finished) {
+                    addLog('⏱️ Force close after 6s fallback');
+                    setVisible(false);
                     onFinish();
-                    closed = true;
+                    finished = true;
                 }
             }, 6000);
 
             return () => {
                 clearInterval(iv);
-                clearTimeout(timer);
-                clearTimeout(force);
+                clearTimeout(t1);
+                clearTimeout(t2);
             };
         };
 
         start();
     }, [onFinish]);
 
+    if (!visible) return null;
+
     return (
         <div
             style={{
+                position: 'relative',
                 display: 'flex',
                 flexDirection: 'column',
                 justifyContent: 'center',
@@ -91,16 +82,38 @@ export default function SplashScreen({ onFinish }: SplashScreenProps) {
                 background: 'radial-gradient(circle at center, #0A5323 30%, #043011 100%)',
                 color: 'white',
                 fontFamily: 'sans-serif',
-                transition: 'opacity 0.6s ease-in-out',
+                transition: 'opacity 0.5s ease-in-out',
             }}
         >
             <img
                 src="https://solitaire-game-chi-gules.vercel.app/splash-200.png"
-                alt="Splash"
+                alt="Solitaire logo"
                 style={{ width: 100, height: 100, marginBottom: 20 }}
             />
             <h2 style={{ fontSize: '1.6rem', fontWeight: 600 }}>Solitaire</h2>
             <p style={{ opacity: 0.8 }}>loading...</p>
+
+            {/* 🧩 Debug overlay */}
+            <div
+                style={{
+                    position: 'absolute',
+                    bottom: 10,
+                    right: 10,
+                    background: 'rgba(255,255,255,0.12)',
+                    borderRadius: 8,
+                    padding: '6px 10px',
+                    fontSize: 12,
+                    fontFamily: 'monospace',
+                    lineHeight: 1.3,
+                    color: '#fff',
+                    textAlign: 'right',
+                    maxWidth: '90%',
+                }}
+            >
+                {logs.map((line, i) => (
+                    <div key={i}>{line}</div>
+                ))}
+            </div>
         </div>
     );
 }
