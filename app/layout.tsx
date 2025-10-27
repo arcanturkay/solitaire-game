@@ -10,7 +10,7 @@ export const metadata = {
         images: [
             {
                 // ⚠️ fazladan tırnaklar kaldırıldı
-                url: 'https://solitaire-game-chi-gules.vercel.app/embed-1200x800.png',
+                url: 'https://solitaire-frame.vercel.app/embed-1200x800.png',
                 width: 1200,
                 height: 800,
                 alt: 'Solitaire Game',
@@ -39,14 +39,14 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                 name="fc:miniapp"
                 content={`{
             "version": "1",
-            "imageUrl": "https://solitaire-game-chi-gules.vercel.app/embed-1200x800.png",
+            "imageUrl": "https://solitaire-frame.vercel.app/embed-1200x800.png",
             "button": {
               "title": "Play Solitaire 🎮",
               "action": {
                 "type": "launch_frame",
                 "name": "Solitaire Game",
-                "url": "https://solitaire-game-chi-gules.vercel.app",
-                "splashImageUrl": "https://solitaire-game-chi-gules.vercel.app/splash-200.png",
+                "url": "https://solitaire-frame.vercel.app",
+                "splashImageUrl": "https://solitaire-frame.vercel.app/splash-200.png",
                 "splashBackgroundColor": "#08401B"
               }
             }

@@ -15,6 +15,13 @@ export default function SplashScreen({ onFinish }: { onFinish: () => void }) {
                 console.log('🟢 Calling sdk.actions.ready()');
                 await sdk.actions.ready();
                 console.log('✅ sdk.actions.ready() success');
+                const user = await sdk.context.user().catch(() => null);
+                if (user) {
+                    console.log("🟣 FID:", user.fid);
+                } else {
+                    console.log("🔴 sdk.context.user() failed");
+                }
+
                 if (onFinish) onFinish();
             } catch (err) {
                 console.warn('⚠️ sdk.actions.ready() failed', err);
