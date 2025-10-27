@@ -2,12 +2,6 @@
 import { useEffect } from 'react';
 import { sdk } from '@farcaster/miniapp-sdk';
 
-declare global {
-    interface Window {
-        farcaster?: any;
-    }
-}
-
 export default function SplashScreen({ onFinish }: { onFinish: () => void }) {
     useEffect(() => {
         const init = async () => {
@@ -15,19 +9,23 @@ export default function SplashScreen({ onFinish }: { onFinish: () => void }) {
                 console.log('🟢 Calling sdk.actions.ready()');
                 await sdk.actions.ready();
                 console.log('✅ sdk.actions.ready() success');
-                const user = await sdk.context.user().catch(() => null);
-                if (user) {
-                    console.log("🟣 FID:", user.fid);
+
+                // sdk.context bir Promise döner, fonksiyon değil
+                const ctx = await sdk.context.catch(() => null);
+
+                if (ctx && (ctx.user?.fid || ctx.fid)) {
+                    console.log('🟣 FID:', ctx.user?.fid || ctx.fid);
                 } else {
-                    console.log("🔴 sdk.context.user() failed");
+                    console.log('🔴 sdk.context missing fid');
                 }
 
-                if (onFinish) onFinish();
+                onFinish();
             } catch (err) {
                 console.warn('⚠️ sdk.actions.ready() failed', err);
-                setTimeout(() => onFinish && onFinish(), 1500); // fallback olarak 1.5s sonra splash kapat
+                setTimeout(() => onFinish(), 1500);
             }
         };
+
         init();
     }, [onFinish]);
 
