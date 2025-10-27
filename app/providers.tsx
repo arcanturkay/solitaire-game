@@ -1,35 +1,35 @@
 'use client';
-import { PrivyProvider, usePrivy } from '@privy-io/react-auth';
-import { ReactNode, useEffect } from 'react';
-
-function UserWatcher() {
-    const { user } = usePrivy();
-
-    useEffect(() => {
-        if (typeof window === 'undefined') return;
-        if (user?.farcaster) {
-            const cached = { fid: user.farcaster.fid, username: user.farcaster.username ?? '' };
-            localStorage.setItem('farcasterUserCache', JSON.stringify(cached));
-        } else {
-            localStorage.removeItem('farcasterUserCache');
-        }
-    }, [user]);
-
-    return null;
-}
+import { PrivyProvider } from '@privy-io/react-auth';
+import { ReactNode, useEffect, useState } from 'react';
 
 export default function Providers({ children }: { children: ReactNode }) {
-    const appId = process.env.NEXT_PUBLIC_PRIVY_APP_ID || 'cmh942lob00d3l80cnoqq89og';
+    const [isMiniApp, setIsMiniApp] = useState(false);
 
+    useEffect(() => {
+        if (typeof window !== 'undefined') {
+            const insideMiniApp = window.location.hostname.includes('wallet.farcaster.xyz');
+            setIsMiniApp(insideMiniApp);
+        }
+    }, []);
+
+    // ⚠️ MiniApp içindeysek Privy'yi tamamen bypass et
+    if (isMiniApp) {
+        console.log('⚡ Farcaster MiniApp detected — skipping Privy Provider');
+        return <>{children}</>;
+    }
+
+    // 🌍 Normal web için Privy aktif
     return (
         <PrivyProvider
-            appId={appId}
+            appId={process.env.NEXT_PUBLIC_PRIVY_APP_ID!}
             config={{
-                appearance: { theme: 'dark', accentColor: '#0A5323' },
+                appearance: {
+                    theme: 'dark',
+                    accentColor: '#0A5323',
+                },
                 loginMethods: ['farcaster', 'wallet'],
             }}
         >
-            <UserWatcher />
             {children}
         </PrivyProvider>
     );

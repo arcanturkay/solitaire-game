@@ -9,6 +9,15 @@ export default function Page() {
     const { ready, authenticated, user } = usePrivy();
     const [showSplash, setShowSplash] = useState(true);
     const [playerId, setPlayerId] = useState<string>('@guest');
+    const [isMiniApp, setIsMiniApp] = useState(false);
+
+    useEffect(() => {
+        // 👇 Farcaster MiniApp ortamını algıla
+        if (typeof window !== 'undefined' && window.location !== undefined) {
+            const insideMiniApp = window.location.hostname.includes('wallet.farcaster.xyz');
+            setIsMiniApp(insideMiniApp);
+        }
+    }, []);
 
     useEffect(() => {
         if (!user) return;
@@ -18,20 +27,22 @@ export default function Page() {
 
         if (farcaster?.username) {
             setPlayerId(`@${farcaster.username}`);
-            console.log('✅ Farcaster user detected:', farcaster.username);
         } else if (wallet?.address) {
             const shortWallet = `${wallet.address.slice(0, 6)}...${wallet.address.slice(-4)}`;
             setPlayerId(shortWallet);
-            console.log('✅ Wallet-only user detected:', shortWallet);
         } else {
             setPlayerId('@guest');
         }
     }, [user]);
 
-    if (showSplash) {
-        return <SplashScreen onFinish={() => setShowSplash(false)} />;
+    if (showSplash) return <SplashScreen onFinish={() => setShowSplash(false)} />;
+
+    // ⚠️ MiniApp içindeysek direkt guest başlat
+    if (isMiniApp) {
+        return <SolitaireGame playerId={playerId} />;
     }
 
+    // Normal web login akışı
     if (!ready) {
         return (
             <p style={{ color: 'white', textAlign: 'center', marginTop: '40vh' }}>
