@@ -7,14 +7,12 @@ function UserWatcher() {
 
     useEffect(() => {
         if (typeof window === 'undefined') return;
-
         if (user?.farcaster) {
             const cached = {
                 fid: user.farcaster.fid,
                 username: user.farcaster.username ?? '',
             };
             localStorage.setItem('farcasterUserCache', JSON.stringify(cached));
-            console.debug('✅ Farcaster user cached:', cached);
         } else {
             localStorage.removeItem('farcasterUserCache');
         }
@@ -24,14 +22,21 @@ function UserWatcher() {
 }
 
 export default function Providers({ children }: { children: ReactNode }) {
+    const appId = process.env.NEXT_PUBLIC_PRIVY_APP_ID;
+
+    // 🚨 SSR sırasında Privy başlatma hatasını engelle
+    if (!appId) {
+        if (typeof window === 'undefined') {
+            console.warn('⚠️ Privy App ID missing during SSR — skipping provider');
+            return <>{children}</>;
+        }
+    }
+
     return (
         <PrivyProvider
-            appId={process.env.NEXT_PUBLIC_PRIVY_APP_ID!}
+            appId={appId!}
             config={{
-                appearance: {
-                    theme: 'dark',
-                    accentColor: '#0A5323',
-                },
+                appearance: { theme: 'dark', accentColor: '#0A5323' },
                 loginMethods: ['farcaster', 'wallet'],
             }}
         >
