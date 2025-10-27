@@ -23,7 +23,7 @@ export default function Page() {
         }
     }, []);
 
-    // 👤 Kullanıcı bilgisi
+    // 👤 Kullanıcı bilgisi güncelle
     useEffect(() => {
         if (!user) return;
         const farcaster = user?.farcaster;
@@ -41,8 +41,10 @@ export default function Page() {
         setWalletConnected(!!wallet?.address);
     }, [user]);
 
-    // 🎬 Splash ekranı
-    if (showSplash) return <SplashScreen onFinish={() => setShowSplash(false)} />;
+    // 🎬 Splash ekranı — her zaman ilk görünür
+    if (showSplash) {
+        return <SplashScreen onFinish={() => setShowSplash(false)} />;
+    }
 
     // ⚙️ MiniApp ortamı — wallet bağlıysa oyunu başlat
     if (isMiniApp) {
@@ -76,5 +78,6 @@ export default function Page() {
         );
     }
 
+    // ✅ Her şey hazır — oyunu başlat
     return <SolitaireGame playerId={playerId} />;
 }

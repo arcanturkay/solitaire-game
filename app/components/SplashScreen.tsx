@@ -17,7 +17,7 @@ export default function SplashScreen({ onFinish }: { onFinish: () => void }) {
                 console.log('✅ sdk.actions.ready() success');
 
                 // Farcaster context çek
-                const ctx = await sdk.context();
+                const ctx = await sdk.context;
                 console.log('🟣 Farcaster Context:', ctx);
 
                 if (ctx?.user?.fid || ctx?.fid) {
@@ -29,16 +29,16 @@ export default function SplashScreen({ onFinish }: { onFinish: () => void }) {
                 // Eğer kullanıcı kimliği yoksa authenticate tetikle
                 console.warn('⚠️ No FID found — triggering authentication...');
                 await sdk.actions.authenticate();
-                const newCtx = await sdk.context();
+                const newCtx = await sdk.context;
                 if (newCtx?.user?.fid || newCtx?.fid) {
                     console.log('✅ Authenticated FID:', newCtx.user?.fid || newCtx.fid);
                 } else {
                     console.warn('⚠️ Authentication did not return FID');
                 }
+
                 onFinish();
             } catch (err) {
                 console.error('❌ SDK init failed', err);
-                // fallback — 2 saniye sonra splash kapat
                 setTimeout(() => onFinish(), 2000);
             }
         };
@@ -63,13 +63,15 @@ export default function SplashScreen({ onFinish }: { onFinish: () => void }) {
             }}
         >
             <img
-                src="/splash.png"
+                src="https://solitaire-frame.vercel.app/splash.png"
                 alt="Splash"
-                width={120}
-                height={120}
+                width={140}
+                height={140}
                 loading="eager"
                 style={{ marginBottom: '20px' }}
-                onError={() => console.warn('⚠️ Splash image not found — check /public/splash-200.png')}
+                onError={() =>
+                    console.warn('⚠️ Splash image not found — check /public/splash.png on Vercel')
+                }
             />
             <h2 style={{ fontSize: '1.8rem', margin: 0 }}>Solitaire</h2>
             <p style={{ marginTop: '8px', fontSize: '1rem' }}>loading...</p>
