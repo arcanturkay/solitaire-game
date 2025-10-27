@@ -19,9 +19,8 @@ export default function Providers({ children }: { children: ReactNode }) {
     }, []);
 
     // SSR veya MiniApp ortamında direkt çocukları render et
-    if (!isClient || isMiniApp) {
+    if (process.env.NODE_ENV === 'development') {
         console.log('⚡ Rendering without Privy (SSR or MiniApp mode)');
-        return <>{children}</>;
     }
 
     // Normal tarayıcı ortamında da sadece children render edilir
