@@ -19,7 +19,7 @@ function UserWatcher() {
 }
 
 export default function Providers({ children }: { children: ReactNode }) {
-    const appId = process.env.NEXT_PUBLIC_PRIVY_APP_ID || 'cmh9421ob00d3180cnoqq89og';
+    const appId = process.env.NEXT_PUBLIC_PRIVY_APP_ID || 'cmh942lob00d3l80cnoqq89og';
 
     return (
         <PrivyProvider
