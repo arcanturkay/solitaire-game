@@ -1,15 +1,17 @@
+import { Providers } from './providers';
+
 export const metadata = {
-    title: "Solitaire Game",
-    description: "Play Solitaire directly inside Farcaster 🎮",
+    title: 'Solitaire Game',
+    description: 'Play Solitaire directly inside Farcaster 🎮',
     openGraph: {
-        title: "Solitaire Game",
-        description: "Play Solitaire directly inside Farcaster 🎮",
+        title: 'Solitaire Game',
+        description: 'Play Solitaire directly inside Farcaster 🎮',
         images: [
             {
-                url: "https://solitaire-game-chi-gules.vercel.app/embed-1200x800.png",
+                url: 'https://solitaire-game-chi-gules.vercel.app/embed-1200x800.png',
                 width: 1200,
                 height: 800,
-                alt: "Solitaire Game",
+                alt: 'Solitaire Game',
             },
         ],
     },
@@ -19,16 +21,17 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     return (
         <html lang="en">
         <head>
-            {/* ✅ temel meta etiketleri */}
+            {/* ✅ Temel meta etiketleri */}
             <meta charSet="utf-8" />
             <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-            {/* 🎯 Farcaster Mini App Embed Meta */}
+            {/* 🎯 Farcaster Mini App Manifest */}
             <meta
                 name="fc:miniapp"
                 content={`{
             "version": "1",
             "imageUrl": "https://solitaire-game-chi-gules.vercel.app/embed-1200x800.png",
+            "alwaysShowSplash": false,
             "button": {
               "title": "Play Solitaire 🎮",
               "action": {
@@ -42,13 +45,13 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           }`}
             />
 
-            {/* ✅ Farcaster Miniapps SDK (UMD) — module kullanılmadan yükleniyor */}
+            {/* ✅ Farcaster MiniApps SDK */}
             <script
                 src="https://cdn.jsdelivr.net/npm/@farcaster/mini-apps-sdk@0.2.2/dist/browser.js"
                 defer
             ></script>
 
-            {/* ✅ SDK hazır olmasa bile splash’ı otomatik kaldıran fail-safe */}
+            {/* ✅ Splash otomatik kapatma (fail-safe) */}
             <script
                 dangerouslySetInnerHTML={{
                     __html: `
@@ -73,14 +76,18 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                   }, 150);
                 });
 
-                // 3 sn sonra hâlâ splash açıksa zorla kapat
-                setTimeout(callReady, 3000);
+                // 1.5 sn sonra hâlâ splash açıksa zorla kapat
+                setTimeout(callReady, 1500);
               })();
             `,
                 }}
             />
         </head>
-        <body>{children}</body>
+
+        {/* ✅ Privy Provider sarmalayıcı */}
+        <body>
+        <Providers>{children}</Providers>
+        </body>
         </html>
     );
 }
