@@ -2,21 +2,32 @@
 const nextConfig = {
     reactStrictMode: true,
 
-    // 🔑 Bu kısım JSON'un doğru Content-Type ile servis edilmesini garanti eder
     async headers() {
         return [
+            // ✅ Global CSP izinleri (Farcaster & Privy uyumlu)
             {
-                source: '/.well-known/farcaster.json',
+                source: "/(.*)",
                 headers: [
-                    { key: 'Content-Type', value: 'application/json' },
-                    { key: 'Cache-Control', value: 'public, max-age=600' },
+                    {
+                        key: "Content-Security-Policy",
+                        value: [
+                            "default-src * 'unsafe-inline' 'unsafe-eval' data: blob:;",
+                            "script-src * 'unsafe-inline' 'unsafe-eval' data: blob:;",
+                            "style-src * 'unsafe-inline' data:;",
+                            "img-src * data: blob:;",
+                            "frame-ancestors *;",
+                        ].join(" "),
+                    },
+                    {
+                        key: "X-Frame-Options",
+                        value: "ALLOWALL",
+                    },
                 ],
             },
         ];
     },
 
-    // 🔧 Bazı ortamlarda public klasör erişimini garanti altına alır
-    output: 'standalone',
+    output: "standalone",
 };
 
 export default nextConfig;
