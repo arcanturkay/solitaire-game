@@ -11,6 +11,22 @@ export default function Page() {
     const [playerId, setPlayerId] = useState<string>('@guest');
     const [isMiniApp, setIsMiniApp] = useState(false);
 
+    // 🧹 Leap / Solana / MetaMask injection hatalarını engelle
+    useEffect(() => {
+        if (typeof window !== 'undefined' && window.location.hostname.includes('wallet.farcaster.xyz')) {
+            console.log('🧹 Disabling wallet injections in Farcaster MiniApp');
+            const disableWalletInjection = () => {
+                if ((window as any).solana) delete (window as any).solana;
+                if ((window as any).ethereum) delete (window as any).ethereum;
+                if ((window as any).coinbaseWalletExtension) delete (window as any).coinbaseWalletExtension;
+            };
+            disableWalletInjection();
+
+            const interval = setInterval(disableWalletInjection, 1000);
+            setTimeout(() => clearInterval(interval), 5000);
+        }
+    }, []);
+
     useEffect(() => {
         // 👇 Farcaster MiniApp ortamını algıla
         if (typeof window !== 'undefined' && window.location !== undefined) {
@@ -37,12 +53,13 @@ export default function Page() {
 
     if (showSplash) return <SplashScreen onFinish={() => setShowSplash(false)} />;
 
-    // ⚠️ MiniApp içindeysek direkt guest başlat
+    // ⚠️ MiniApp içindeysek Privy login atlanır, direkt oyun başlar
     if (isMiniApp) {
+        console.log('🎮 Farcaster MiniApp detected — starting guest mode');
         return <SolitaireGame playerId={playerId} />;
     }
 
-    // Normal web login akışı
+    // 🌍 Normal web login akışı
     if (!ready) {
         return (
             <p style={{ color: 'white', textAlign: 'center', marginTop: '40vh' }}>
