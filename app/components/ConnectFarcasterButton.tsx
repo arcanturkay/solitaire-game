@@ -1,72 +1,49 @@
 'use client';
-import { usePrivy } from '@privy-io/react-auth';
+import { sdk } from '@farcaster/miniapp-sdk';
+import { useState } from 'react';
 
 export default function ConnectFarcasterButton() {
-    const { ready, authenticated, user, login, logout } = usePrivy();
+    const [connecting, setConnecting] = useState(false);
 
-    if (!ready) {
-        return (
-            <button
-                disabled
-                style={{
-                    backgroundColor: '#555',
-                    color: '#fff',
-                    border: 'none',
-                    borderRadius: 8,
-                    padding: '12px 24px',
-                    fontWeight: 600,
-                    cursor: 'not-allowed',
-                }}
-            >
-                Loading...
-            </button>
-        );
-    }
-
-    if (authenticated && user?.farcaster?.username) {
-        return (
-            <div style={{ textAlign: 'center', color: 'white' }}>
-                <p>✅ Connected as <strong>@{user.farcaster.username}</strong></p>
-                <button
-                    onClick={() => logout()}
-                    style={{
-                        marginTop: 12,
-                        backgroundColor: '#333',
-                        color: '#fff',
-                        border: 'none',
-                        borderRadius: 8,
-                        padding: '10px 20px',
-                        cursor: 'pointer',
-                    }}
-                >
-                    Logout
-                </button>
-            </div>
-        );
-    }
+    const handleConnect = async () => {
+        try {
+            setConnecting(true);
+            console.log('🟣 Requesting Farcaster connection...');
+            // Kullanıcıyı Farcaster uygulamasına yönlendir
+            await sdk.actions.openUrl('https://warpcast.com');
+            console.log('✅ Connection flow triggered');
+        } catch (err) {
+            console.error('❌ Failed to trigger Farcaster connection:', err);
+        } finally {
+            setConnecting(false);
+        }
+    };
 
     return (
         <button
-            onClick={() => login()}  // 🔥 parametresiz çağrı, v3.4.1 için doğru
+            onClick={handleConnect}
+            disabled={connecting}
             style={{
-                backgroundColor: '#0A5323',
+                backgroundColor: connecting ? '#444' : '#0A5323',
                 color: '#fff',
                 border: 'none',
                 borderRadius: 8,
                 padding: '14px 28px',
                 fontWeight: 600,
                 fontSize: '1rem',
-                cursor: 'pointer',
+                cursor: connecting ? 'not-allowed' : 'pointer',
                 transition: 'background 0.3s ease',
             }}
-            onMouseOver={(e) =>
-                ((e.target as HTMLButtonElement).style.backgroundColor = '#0E6C2E')
-            }
-            onMouseOut={(e) =>
-                ((e.target as HTMLButtonElement).style.backgroundColor = '#0A5323')
-            }
+            onMouseOver={(e) => {
+                if (!connecting)
+                    (e.target as HTMLButtonElement).style.backgroundColor = '#0E6C2E';
+            }}
+            onMouseOut={(e) => {
+                if (!connecting)
+                    (e.target as HTMLButtonElement).style.backgroundColor = '#0A5323';
+            }}
         >
-            🎮 Connect Farcaster
+            {connecting ? 'Connecting...' : '🎮 Connect Farcaster'}
         </button>
     );
 }

@@ -20,8 +20,10 @@ export default function Page() {
         }
     }, []);
 
+    // 🎬 Splash ekranı
     if (showSplash) return <SplashScreen onFinish={() => setShowSplash(false)} />;
 
+    // ⚙️ MiniApp ortamı — wallet bağlıysa oyunu başlat
     if (isMiniApp) {
         if (walletConnected) {
             return <SolitaireGame playerId={playerId} />;
@@ -35,6 +37,6 @@ export default function Page() {
         }
     }
 
-    // fallback (sandbox dışı)
+    // 🌐 Web ortamı — doğrudan oyun (Privy yok)
     return <SolitaireGame playerId={playerId} />;
 }
