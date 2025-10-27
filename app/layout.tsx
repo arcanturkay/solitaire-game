@@ -22,6 +22,12 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     return (
         <html lang="en">
         <head>
+            <script
+                type="module"
+                src="/farcaster-ready.js"
+                async
+                crossOrigin="anonymous"
+            ></script>
             <meta httpEquiv="Cache-Control" content="no-cache, no-store, must-revalidate"/>
             <meta httpEquiv="Pragma" content="no-cache"/>
             <meta httpEquiv="Expires" content="0"/>

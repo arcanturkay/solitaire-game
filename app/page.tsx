@@ -16,10 +16,11 @@ export default function Page() {
         if (typeof window !== 'undefined') {
             const insideMiniApp =
                 window.location.hostname.includes('wallet.farcaster.xyz') ||
-                window.location.hostname.includes('farcaster.xyz');
+                window.location.hostname.includes('farcaster.xyz') ||
+                window.location.hostname.includes('warpcast.com');
             setIsMiniApp(insideMiniApp);
 
-            // Farcaster frame yeniden açıldığında splash'ı sıfırla
+            // Frame yeniden açıldığında splash'ı sıfırla
             const onFocus = () => {
                 if (insideMiniApp) {
                     console.log('🎮 Frame reopened — showing splash again');
@@ -48,15 +49,15 @@ export default function Page() {
         }
     }, [user]);
 
-    // 🎬 Splash gösterimi (MiniApp veya Web farketmez)
+    // 🎬 Splash gösterimi
     if (showSplash) return <SplashScreen onFinish={() => setShowSplash(false)} />;
 
-    // ⚙️ MiniApp ortamında misafir olarak başlat
+    // ⚙️ MiniApp ortamı — misafir olarak direkt başlat
     if (isMiniApp) {
         return <SolitaireGame playerId={playerId} />;
     }
 
-    // 🌐 Web ortamı — Privy akışı
+    // 🌐 Web ortamı — Privy kimlik doğrulaması
     if (!ready) {
         return (
             <p style={{ color: 'white', textAlign: 'center', marginTop: '40vh' }}>

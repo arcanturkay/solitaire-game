@@ -4,7 +4,10 @@ import { ReactNode, useEffect, useState } from 'react';
 
 export default function Providers({ children }: { children: ReactNode }) {
     const [isClient, setIsClient] = useState(false);
-    const [isMiniApp, setIsMiniApp] = useState(false);
+    const insideMiniApp =
+        window.location.hostname.includes('wallet.farcaster.xyz') ||
+        window.location.hostname.includes('farcaster.xyz') ||
+        window.location.hostname.includes('warpcast.com');
 
     useEffect(() => {
         // ✅ SSR yerine client'ta render edildiğini garanti ediyoruz
