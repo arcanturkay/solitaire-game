@@ -9,7 +9,7 @@ export const metadata = {
         description: 'Play Solitaire directly inside Farcaster 🎮',
         images: [
             {
-                url: 'https://solitaire-game-chi-gules.vercel.app/embed-1200x800.png',
+                url: 'https://solitaire-game-chi-gules.vercel.app',
                 width: 1200,
                 height: 800,
                 alt: 'Solitaire Game',
