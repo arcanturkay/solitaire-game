@@ -1,16 +1,41 @@
 'use client';
-import { PrivyProvider } from '@privy-io/react-auth';
+import { PrivyProvider, usePrivy } from '@privy-io/react-auth';
+import { ReactNode, useEffect } from 'react';
 
-export function Providers({ children }: { children: React.ReactNode }) {
+function UserWatcher() {
+    const { user } = usePrivy();
+
+    useEffect(() => {
+        if (typeof window === 'undefined') return;
+
+        if (user?.farcaster) {
+            const cached = {
+                fid: user.farcaster.fid,
+                username: user.farcaster.username ?? '',
+            };
+            localStorage.setItem('farcasterUserCache', JSON.stringify(cached));
+            console.debug('✅ Farcaster user cached:', cached);
+        } else {
+            localStorage.removeItem('farcasterUserCache');
+        }
+    }, [user]);
+
+    return null;
+}
+
+export default function Providers({ children }: { children: ReactNode }) {
     return (
         <PrivyProvider
             appId={process.env.NEXT_PUBLIC_PRIVY_APP_ID!}
             config={{
-                appearance: { theme: 'dark' },
+                appearance: {
+                    theme: 'dark',
+                    accentColor: '#0A5323',
+                },
                 loginMethods: ['farcaster', 'wallet'],
-                embeddedWallets: { createOnLogin: 'users-without-wallets' },
             }}
         >
+            <UserWatcher />
             {children}
         </PrivyProvider>
     );

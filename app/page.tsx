@@ -10,7 +10,6 @@ export default function Page() {
     const [showSplash, setShowSplash] = useState(true);
     const [playerId, setPlayerId] = useState<string>('@guest');
 
-    // 🧩 Kimlik çözümleme her zaman tanımlı olmalı (KOŞULSUZ)
     useEffect(() => {
         if (!user) return;
 
@@ -29,12 +28,10 @@ export default function Page() {
         }
     }, [user]);
 
-    // 🎬 Splash ekranı
     if (showSplash) {
         return <SplashScreen onFinish={() => setShowSplash(false)} />;
     }
 
-    // ⏳ Privy SDK yüklenmemiş
     if (!ready) {
         return (
             <p style={{ color: 'white', textAlign: 'center', marginTop: '40vh' }}>
@@ -43,7 +40,6 @@ export default function Page() {
         );
     }
 
-    // 🔐 Kullanıcı giriş yapmamış
     if (!authenticated) {
         return (
             <div style={{ color: 'white', textAlign: 'center', marginTop: '40vh' }}>
@@ -53,6 +49,5 @@ export default function Page() {
         );
     }
 
-    // 🎮 Oyun
     return <SolitaireGame playerId={playerId} />;
 }

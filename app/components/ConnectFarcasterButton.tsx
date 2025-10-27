@@ -2,7 +2,7 @@
 import { usePrivy } from '@privy-io/react-auth';
 
 export default function ConnectFarcasterButton() {
-    const { ready, authenticated, login, user } = usePrivy();
+    const { ready, authenticated, user, login, logout } = usePrivy();
 
     if (!ready) {
         return (
@@ -26,16 +26,28 @@ export default function ConnectFarcasterButton() {
     if (authenticated && user?.farcaster?.username) {
         return (
             <div style={{ textAlign: 'center', color: 'white' }}>
-                <p>
-                    ✅ Connected as <strong>@{user.farcaster.username}</strong>
-                </p>
+                <p>✅ Connected as <strong>@{user.farcaster.username}</strong></p>
+                <button
+                    onClick={() => logout()}
+                    style={{
+                        marginTop: 12,
+                        backgroundColor: '#333',
+                        color: '#fff',
+                        border: 'none',
+                        borderRadius: 8,
+                        padding: '10px 20px',
+                        cursor: 'pointer',
+                    }}
+                >
+                    Logout
+                </button>
             </div>
         );
     }
 
     return (
         <button
-            onClick={() => login()}
+            onClick={() => login()}  // 🔥 parametresiz çağrı, v3.4.1 için doğru
             style={{
                 backgroundColor: '#0A5323',
                 color: '#fff',
@@ -47,8 +59,12 @@ export default function ConnectFarcasterButton() {
                 cursor: 'pointer',
                 transition: 'background 0.3s ease',
             }}
-            onMouseOver={(e) => ((e.target as HTMLButtonElement).style.backgroundColor = '#0E6C2E')}
-            onMouseOut={(e) => ((e.target as HTMLButtonElement).style.backgroundColor = '#0A5323')}
+            onMouseOver={(e) =>
+                ((e.target as HTMLButtonElement).style.backgroundColor = '#0E6C2E')
+            }
+            onMouseOut={(e) =>
+                ((e.target as HTMLButtonElement).style.backgroundColor = '#0A5323')
+            }
         >
             🎮 Connect Farcaster
         </button>
