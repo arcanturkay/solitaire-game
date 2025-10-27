@@ -8,10 +8,9 @@ import ConnectFarcasterButton from './components/ConnectFarcasterButton';
 export default function Page() {
     const { ready, authenticated, user } = usePrivy();
     const [showSplash, setShowSplash] = useState(true);
-    const [playerId, setPlayerId] = useState<string>('@guest');
+    const [playerId, setPlayerId] = useState('@guest');
     const [isMiniApp, setIsMiniApp] = useState(false);
 
-    // 🧭 MiniApp ortamını algıla
     useEffect(() => {
         if (typeof window !== 'undefined') {
             const insideMiniApp =
@@ -20,64 +19,43 @@ export default function Page() {
 
             setIsMiniApp(insideMiniApp);
 
-            // 🧹 her frame yenilendiğinde cache temizle ve splash yeniden göster
-            try {
-                sessionStorage.clear();
-            } catch (e) {}
-
-            // Frame bazlı splash reset — her yeni açılışta 2.5sn splash
+            // Her yeni frame’de splash göster
             if (insideMiniApp || window.location.search.includes('frame=')) {
+                sessionStorage.clear();
                 setShowSplash(true);
                 setTimeout(() => setShowSplash(false), 2500);
             }
-
-            if (insideMiniApp)
-                console.log('🎮 Farcaster MiniApp detected — starting guest mode');
         }
     }, []);
 
-    // 👤 Kullanıcı kimliğini belirle
     useEffect(() => {
         if (!user) return;
         const farcaster = user?.farcaster;
         const wallet = user?.wallet;
-
-        if (farcaster?.username) {
-            setPlayerId(`@${farcaster.username}`);
-        } else if (wallet?.address) {
-            const shortWallet = `${wallet.address.slice(0, 6)}...${wallet.address.slice(-4)}`;
-            setPlayerId(shortWallet);
-        } else {
-            setPlayerId('@guest');
-        }
+        if (farcaster?.username) setPlayerId(`@${farcaster.username}`);
+        else if (wallet?.address)
+            setPlayerId(`${wallet.address.slice(0, 6)}...${wallet.address.slice(-4)}`);
+        else setPlayerId('@guest');
     }, [user]);
 
-    // 🟢 Splash gösterimi
     if (showSplash) return <SplashScreen onFinish={() => setShowSplash(false)} />;
 
-    // ⚙️ MiniApp içindeyse direkt guest olarak başlat
-    if (isMiniApp) {
-        return <SolitaireGame playerId={playerId} />;
-    }
+    if (isMiniApp) return <SolitaireGame playerId={playerId} />;
 
-    // 🌐 Web ortamında Privy kimlik doğrulama akışı
-    if (!ready) {
+    if (!ready)
         return (
             <p style={{ color: 'white', textAlign: 'center', marginTop: '40vh' }}>
                 Loading authentication...
             </p>
         );
-    }
 
-    if (!authenticated) {
+    if (!authenticated)
         return (
             <div style={{ color: 'white', textAlign: 'center', marginTop: '40vh' }}>
                 <h2>Connect your Farcaster account to play 🎮</h2>
                 <ConnectFarcasterButton />
             </div>
         );
-    }
 
-    // ✅ Auth tamam, oyunu başlat
     return <SolitaireGame playerId={playerId} />;
 }
