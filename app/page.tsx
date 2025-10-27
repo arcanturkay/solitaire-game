@@ -8,33 +8,51 @@ import ConnectFarcasterButton from './components/ConnectFarcasterButton';
 export default function Page() {
     const { ready, authenticated, user } = usePrivy();
     const [showSplash, setShowSplash] = useState(true);
+    const [playerId, setPlayerId] = useState<string>('@guest');
 
-    if (showSplash) return <SplashScreen onFinish={() => setShowSplash(false)} />;
+    // 🧩 Kimlik çözümleme her zaman tanımlı olmalı (KOŞULSUZ)
+    useEffect(() => {
+        if (!user) return;
 
-    if (!ready)
+        const farcaster = user?.farcaster;
+        const wallet = user?.wallet;
+
+        if (farcaster?.username) {
+            setPlayerId(`@${farcaster.username}`);
+            console.log('✅ Farcaster user detected:', farcaster.username);
+        } else if (wallet?.address) {
+            const shortWallet = `${wallet.address.slice(0, 6)}...${wallet.address.slice(-4)}`;
+            setPlayerId(shortWallet);
+            console.log('✅ Wallet-only user detected:', shortWallet);
+        } else {
+            setPlayerId('@guest');
+        }
+    }, [user]);
+
+    // 🎬 Splash ekranı
+    if (showSplash) {
+        return <SplashScreen onFinish={() => setShowSplash(false)} />;
+    }
+
+    // ⏳ Privy SDK yüklenmemiş
+    if (!ready) {
         return (
             <p style={{ color: 'white', textAlign: 'center', marginTop: '40vh' }}>
                 Loading authentication...
             </p>
         );
+    }
 
-    if (!authenticated)
+    // 🔐 Kullanıcı giriş yapmamış
+    if (!authenticated) {
         return (
             <div style={{ color: 'white', textAlign: 'center', marginTop: '40vh' }}>
                 <h2>Connect your Farcaster account to play 🎮</h2>
                 <ConnectFarcasterButton />
             </div>
         );
+    }
 
-    const farcasterUser = user?.farcaster;
-    const wallet = user?.wallet;
-
-    return (
-        <div style={{ color: 'white', textAlign: 'center' }}>
-            <h2>Welcome {farcasterUser?.username || 'Anon'}</h2>
-            <p>FID: {farcasterUser?.fid}</p>
-            {wallet && <p>Wallet: {wallet.address}</p>}
-            <SolitaireGame playerId={farcasterUser?.username || 'guest'} />
-        </div>
-    );
+    // 🎮 Oyun
+    return <SolitaireGame playerId={playerId} />;
 }
