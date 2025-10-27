@@ -1,5 +1,5 @@
 'use client';
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { sdk } from '@farcaster/miniapp-sdk';
 
 declare global {
@@ -8,120 +8,37 @@ declare global {
     }
 }
 
-interface SplashScreenProps {
-    onFinish: () => void;
-}
-
-export default function SplashScreen({ onFinish }: SplashScreenProps) {
-    const [visible, setVisible] = useState(true);
-    const [logs, setLogs] = useState<string[]>([]);
-
-    const addLog = (msg: string) => {
-        console.log(msg);
-        setLogs((prev) => [...prev.slice(-4), msg]);
-    };
-
+export default function SplashScreen({ onFinish }: { onFinish: () => void }) {
     useEffect(() => {
-        let finished = false;
-
-        const initSdk = async () => {
-            if (typeof window === 'undefined') return false;
-
-            // ✅ Farcaster ortamında mı?
-            const isMiniApp =
-                window.location.hostname.includes('wallet.farcaster.xyz') ||
-                window.location.hostname.includes('farcaster.xyz') ||
-                window.location.hostname.includes('warpcast.com');
-
-            if (!isMiniApp || !window.farcaster) {
-                addLog('⚪ SDK unavailable (Web/Local mode)');
-                return true; // web modda direkt devam et
-            }
-
+        const init = async () => {
             try {
+                console.log('🟢 Calling sdk.actions.ready()');
                 await sdk.actions.ready();
-                addLog('✅ sdk.actions.ready() success');
-                return true;
+                console.log('✅ sdk.actions.ready() success');
+                if (onFinish) onFinish();
             } catch (err) {
-                addLog('⚠️ sdk.actions.ready() failed');
-                return false;
+                console.warn('⚠️ sdk.actions.ready() failed', err);
+                setTimeout(() => onFinish && onFinish(), 1500); // fallback olarak 1.5s sonra splash kapat
             }
         };
-
-        const start = async () => {
-            let tries = 0;
-            const interval = setInterval(async () => {
-                tries++;
-                const ok = await initSdk();
-                if (ok || tries > 20) {
-                    clearInterval(interval);
-                    if (!finished) {
-                        finished = true;
-                        setVisible(false);
-                        onFinish();
-                    }
-                }
-            }, 200);
-
-            // güvenlik süresi (5s fallback)
-            setTimeout(() => {
-                if (!finished) {
-                    addLog('⏱️ Timeout reached, closing splash manually');
-                    finished = true;
-                    setVisible(false);
-                    onFinish();
-                }
-            }, 5000);
-        };
-
-        start();
+        init();
     }, [onFinish]);
-
-    if (!visible) return null;
 
     return (
         <div
             style={{
-                position: 'relative',
+                backgroundColor: '#08401B',
+                color: 'white',
+                height: '100vh',
                 display: 'flex',
                 flexDirection: 'column',
                 justifyContent: 'center',
                 alignItems: 'center',
-                height: '100vh',
-                background: 'radial-gradient(circle at center, #0A5323 30%, #043011 100%)',
-                color: 'white',
-                fontFamily: 'sans-serif',
-                transition: 'opacity 0.5s ease-in-out',
             }}
         >
-            <img
-                src="https://solitaire-game-chi-gules.vercel.app/splash-200.png"
-                alt="Solitaire logo"
-                style={{ width: 100, height: 100, marginBottom: 20, borderRadius: 12 }}
-            />
-            <h2 style={{ fontSize: '1.6rem', fontWeight: 600 }}>Solitaire</h2>
-            <p style={{ opacity: 0.8 }}>loading...</p>
-
-            {/* 🧩 Debug overlay */}
-            <div
-                style={{
-                    position: 'absolute',
-                    bottom: 10,
-                    right: 10,
-                    background: 'rgba(255,255,255,0.12)',
-                    borderRadius: 8,
-                    padding: '6px 10px',
-                    fontSize: 12,
-                    fontFamily: 'monospace',
-                    color: '#fff',
-                    textAlign: 'right',
-                    maxWidth: '90%',
-                }}
-            >
-                {logs.map((line, i) => (
-                    <div key={i}>{line}</div>
-                ))}
-            </div>
+            <img src="/splash-200.png" alt="Splash" width={120} height={120} />
+            <h2>Solitaire</h2>
+            <p>loading...</p>
         </div>
     );
 }
