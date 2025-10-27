@@ -2,14 +2,13 @@
 import { useEffect, useState } from 'react';
 import SplashScreen from './components/SplashScreen';
 import SolitaireGame from './components/SolitaireGame';
-import ConnectFarcasterButton from './components/ConnectFarcasterButton';
 
 export default function Page() {
     const [showSplash, setShowSplash] = useState(true);
     const [isMiniApp, setIsMiniApp] = useState(false);
-    const [walletConnected, setWalletConnected] = useState(false);
-    const [playerId, setPlayerId] = useState('@guest');
+    const [playerId, setPlayerId] = useState<string | null>(null);
 
+    // Ortam kontrolü (Warpcast mi, web mi)
     useEffect(() => {
         if (typeof window !== 'undefined') {
             const insideMiniApp =
@@ -20,23 +19,39 @@ export default function Page() {
         }
     }, []);
 
-    // 🎬 Splash ekranı
-    if (showSplash) return <SplashScreen onFinish={() => setShowSplash(false)} />;
-
-    // ⚙️ MiniApp ortamı — wallet bağlıysa oyunu başlat
-    if (isMiniApp) {
-        if (walletConnected) {
-            return <SolitaireGame playerId={playerId} />;
-        } else {
-            return (
-                <div style={{ color: 'white', textAlign: 'center', marginTop: '40vh' }}>
-                    <h2>Connect your Farcaster wallet to play 🎮</h2>
-                    <ConnectFarcasterButton />
-                </div>
-            );
-        }
+    // Splash bitmediyse splash göster
+    if (showSplash) {
+        return (
+            <SplashScreen
+                onFinish={(player) => {
+                    setPlayerId(player);
+                    setShowSplash(false);
+                }}
+            />
+        );
     }
 
-    // 🌐 Web ortamı — doğrudan oyun (Privy yok)
-    return <SolitaireGame playerId={playerId} />;
+    // Oyun ekranı
+    return (
+        <div
+            style={{
+                backgroundColor: '#08401B',
+                color: 'white',
+                height: '100vh',
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'flex-start',
+                paddingTop: '24px',
+            }}
+        >
+            {playerId && (
+                <div style={{ marginBottom: '16px', fontSize: '1.1rem' }}>
+                    👋 Welcome <strong>{playerId}</strong> 🎮
+                </div>
+            )}
+
+            <SolitaireGame playerId={playerId || '@unknown'} />
+        </div>
+    );
 }

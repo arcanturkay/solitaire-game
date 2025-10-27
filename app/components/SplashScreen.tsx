@@ -8,29 +8,55 @@ declare global {
     }
 }
 
-export default function SplashScreen({ onFinish }: { onFinish: () => void }) {
+export default function SplashScreen({ onFinish }: { onFinish: (playerId: string) => void }) {
     useEffect(() => {
         const init = async () => {
             try {
-                console.log('🟢 Calling sdk.actions.ready()...');
+                console.log('🟢 Initializing Farcaster MiniApp...');
                 await sdk.actions.ready();
                 console.log('✅ sdk.actions.ready() success');
 
-                // Farcaster context çek
-                const ctx = await sdk.context;
+                // context doğrudan Promise döndürüyor (fonksiyon değil!)
+                let ctx = await sdk.context;
                 console.log('🟣 Farcaster Context:', ctx);
 
-                const fid = ctx?.user?.fid;
-                if (fid) {
-                    console.log('✅ Connected FID:', fid);
-                } else {
-                    console.warn('⚠️ No FID found — user not connected yet');
+                const isMiniApp =
+                    window?.location?.hostname?.includes('wallet.farcaster.xyz') ||
+                    window?.location?.hostname?.includes('farcaster.xyz') ||
+                    window?.location?.hostname?.includes('warpcast.com');
+
+                if (!isMiniApp) {
+                    console.warn('⚪ Not inside Farcaster MiniApp — user context unavailable');
+                    onFinish('@web');
+                    return;
                 }
 
-                onFinish();
+                // Kullanıcı bağlı değilse wallet bağlantısı iste
+                if (!ctx?.user?.fid) {
+                    console.warn('⚠️ No FID found — requesting wallet connection...');
+                    try {
+                        // @ts-ignore  → SDK tiplerinde tanımlı değil ama runtime’da mevcut
+                        await sdk.actions.requestWalletConnection();
+                    } catch (e) {
+                        console.warn('⚠️ Wallet connection cancelled or failed:', e);
+                    }
+
+                    // tekrar Promise olarak oku
+                    ctx = await sdk.context;
+                }
+
+                let playerId = '@unknown';
+                if (ctx?.user?.username) {
+                    playerId = `@${ctx.user.username}`;
+                } else if (ctx?.user?.fid) {
+                    playerId = `FID-${ctx.user.fid}`;
+                }
+
+                console.log('✅ Player identified as:', playerId);
+                onFinish(playerId);
             } catch (err) {
                 console.error('❌ SDK init failed', err);
-                setTimeout(() => onFinish(), 2000);
+                setTimeout(() => onFinish('@error'), 2000);
             }
         };
 
@@ -44,13 +70,10 @@ export default function SplashScreen({ onFinish }: { onFinish: () => void }) {
                 color: 'white',
                 height: '100vh',
                 width: '100vw',
-                margin: 0,
-                padding: 0,
                 display: 'flex',
                 flexDirection: 'column',
                 justifyContent: 'center',
                 alignItems: 'center',
-                textAlign: 'center',
             }}
         >
             <img
