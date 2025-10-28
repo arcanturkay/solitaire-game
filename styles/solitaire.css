@@ -458,3 +458,13 @@ h1 {
     font-size: 0.9rem;
   }
 }
+.card.selected {
+  outline: 3px solid var(--selected-outline);
+  box-shadow: 0 0 12px rgba(255,255,255,0.6);
+  z-index: 1000;
+}
+
+.card:active {
+  transform: scale(0.97);
+  transition: transform 0.05s ease;
+}
