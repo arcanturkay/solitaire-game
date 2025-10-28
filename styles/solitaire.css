@@ -474,3 +474,6 @@ html, body { touch-action: manipulation; }
   box-shadow: 0 0 12px rgba(255,255,255,0.5);
   z-index: 1000;
 }
+#confetti-canvas {
+  will-change: transform;
+}
