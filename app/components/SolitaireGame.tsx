@@ -301,8 +301,11 @@ export default function SolitaireGame({ playerId }: { playerId: string }) {
             cardIdCounter = 0;
             hasWon = false;
             score = 0;
-            [stockPile, wastePile, ...foundationPiles, ...tableauPiles].forEach(pile => {
+            [stockPile, wastePile, ...foundationPiles].forEach(pile => {
                 pile!.innerHTML = '<div class="pile-placeholder"></div>';
+            });
+            tableauPiles.forEach(pile => {
+                (pile as HTMLElement).innerHTML = ''; // tabloya placeholder koyma
             });
             winModal!.classList.remove('show');
             createDeck();
