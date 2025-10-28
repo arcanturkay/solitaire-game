@@ -8,24 +8,29 @@ import '../styles/solitaire.css';
 
 export default function Page() {
     const [fid, setFid] = useState<string | null>(null);
+    const [username, setUsername] = useState<string | null>(null);
     const [isReady, setIsReady] = useState(false);
 
     useEffect(() => {
         const init = async () => {
-            await sdk.actions.ready(); // mini app hazırlanıyor
-            const context = await sdk.context; // 👈 async context çağrısı
-            const fidValue = context?.user?.fid;
-            if (fidValue) setFid(fidValue.toString());
+            await sdk.actions.ready();
+            const context = await sdk.context;
+
+            if (context?.user) {
+                const { fid, username, displayName } = context.user;
+                setFid(fid?.toString());
+                setUsername(username || displayName || `fid${fid}`);
+            }
             setIsReady(true);
         };
         init();
     }, []);
 
     const handleConnect = async () => {
-        // Farcaster dışı testlerde fallback
         const context = await sdk.context;
-        const fidValue = context?.user?.fid || 'guest';
-        setFid(fidValue.toString());
+        const { fid, username, displayName } = context?.user || {};
+        setFid(fid?.toString() || 'guest');
+        setUsername(username || displayName || `fid${fid || 'guest'}`);
     };
 
     if (!isReady) {
@@ -37,5 +42,5 @@ export default function Page() {
     }
 
     if (!fid) return <SplashScreen onConnect={handleConnect} />;
-    return <SolitaireGame playerId={`fid${fid}`} />;
+    return <SolitaireGame playerId={username || `fid${fid}`} />;
 }
