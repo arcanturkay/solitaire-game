@@ -1,57 +1,41 @@
 'use client';
+
 import { useEffect, useState } from 'react';
+import sdk from '@farcaster/miniapp-sdk';
 import SplashScreen from './components/SplashScreen';
 import SolitaireGame from './components/SolitaireGame';
+import '../styles/solitaire.css';
 
 export default function Page() {
-    const [showSplash, setShowSplash] = useState(true);
-    const [isMiniApp, setIsMiniApp] = useState(false);
-    const [playerId, setPlayerId] = useState<string | null>(null);
+    const [fid, setFid] = useState<string | null>(null);
+    const [isReady, setIsReady] = useState(false);
 
-    // Ortam kontrolü (Warpcast mi, web mi)
     useEffect(() => {
-        if (typeof window !== 'undefined') {
-            const insideMiniApp =
-                window.location.hostname.includes('wallet.farcaster.xyz') ||
-                window.location.hostname.includes('farcaster.xyz') ||
-                window.location.hostname.includes('warpcast.com');
-            setIsMiniApp(insideMiniApp);
-        }
+        const init = async () => {
+            await sdk.actions.ready(); // mini app hazırlanıyor
+            const context = await sdk.context; // 👈 async context çağrısı
+            const fidValue = context?.user?.fid;
+            if (fidValue) setFid(fidValue.toString());
+            setIsReady(true);
+        };
+        init();
     }, []);
 
-    // Splash bitmediyse splash göster
-    if (showSplash) {
+    const handleConnect = async () => {
+        // Farcaster dışı testlerde fallback
+        const context = await sdk.context;
+        const fidValue = context?.user?.fid || 'guest';
+        setFid(fidValue.toString());
+    };
+
+    if (!isReady) {
         return (
-            <SplashScreen
-                onFinish={(player) => {
-                    setPlayerId(player);
-                    setShowSplash(false);
-                }}
-            />
+            <div id="farcaster-wall">
+                <h2>Loading Mini App...</h2>
+            </div>
         );
     }
 
-    // Oyun ekranı
-    return (
-        <div
-            style={{
-                backgroundColor: '#08401B',
-                color: 'white',
-                height: '100vh',
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                justifyContent: 'flex-start',
-                paddingTop: '24px',
-            }}
-        >
-            {playerId && (
-                <div style={{ marginBottom: '16px', fontSize: '1.1rem' }}>
-                    👋 Welcome <strong>{playerId}</strong> 🎮
-                </div>
-            )}
-
-            <SolitaireGame playerId={playerId || '@unknown'} />
-        </div>
-    );
+    if (!fid) return <SplashScreen onConnect={handleConnect} />;
+    return <SolitaireGame playerId={`fid${fid}`} />;
 }
