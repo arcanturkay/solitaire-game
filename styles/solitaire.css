@@ -458,3 +458,12 @@ h1 {
     font-size: 0.9rem;
   }
 }
+.card.selected {
+  outline: 3px solid #FFC107;
+  box-shadow: 0 0 14px rgba(255,193,7,0.6);
+  z-index: 1000;
+}
+html, body {
+  overscroll-behavior: none;
+}
+
