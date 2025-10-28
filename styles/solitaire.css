@@ -463,6 +463,10 @@ h1 {
   box-shadow: 0 0 14px rgba(255,193,7,0.6);
   z-index: 1000;
 }
+.card:active {
+  transform: scale(0.96);
+  transition: transform 0.05s ease;
+}
 html, body {
   overscroll-behavior: none;
 }
