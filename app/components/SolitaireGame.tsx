@@ -33,7 +33,7 @@ export default function SolitaireGame({ playerId }: { playerId: string }) {
         const leaderboardModal = document.getElementById('leaderboard-modal')!;
         const closeLeaderboardBtn = document.getElementById('close-leaderboard-btn')!;
         const leaderboardTableBody = leaderboardModal.querySelector('tbody')!;
-        const autoFinishBtn = document.getElementById('auto-finish-btn') as HTMLButtonElement;
+        const autoFinishBtn = document.getElementById('auto-finish-btn') as HTMLButtonElement | null;
         const currentPlayerStatus = document.getElementById('current-player-status');
 
         let deck: Card[] = [];
@@ -47,13 +47,13 @@ export default function SolitaireGame({ playerId }: { playerId: string }) {
                 currentPlayerStatus.textContent = `Playing as: ${currentPlayerId}`;
         }
 
-        function saveAccumulatedScore(playerId: string, newScore: number) {
+        function saveAccumulatedScore(pid: string, newScore: number) {
             const scores = JSON.parse(localStorage.getItem(ACCUMULATED_SCORES_KEY) || '{}');
-            scores[playerId] = (scores[playerId] || 0) + newScore;
+            scores[pid] = (scores[pid] || 0) + newScore;
             localStorage.setItem(ACCUMULATED_SCORES_KEY, JSON.stringify(scores));
         }
 
-        function handleGameEndOrReset(isWin = false) {
+        function handleGameEndOrReset(_isWin = false) {
             if (!isGameActive && score === 0) return;
             saveAccumulatedScore(currentPlayerId, score);
             isGameActive = false;
@@ -93,6 +93,7 @@ export default function SolitaireGame({ playerId }: { playerId: string }) {
             const card = document.createElement('div');
             card.id = `card-${cardIdCounter++}`;
             card.classList.add('card', cardData.color);
+
             if (!cardData.isFaceUp) {
                 card.classList.add('face-down');
             } else {
@@ -118,41 +119,41 @@ export default function SolitaireGame({ playerId }: { playerId: string }) {
             // 💻 Web: drag & drop + double-click
             card.addEventListener('dragstart', onDragStart);
             card.addEventListener('dragend', onDragEnd);
-            card.addEventListener('dblclick', e => {
+            card.addEventListener('dblclick', (e) => {
                 e.stopPropagation();
                 onCardDoubleClick(e);
             });
 
-            // 📱 Mobil: tap-to-move + double-tap (sadece click ile; touchend eklemiyoruz)
+            // 📱 Mobil: pointer events ile anında tepki (tap-to-move + double-tap)
             if (isMobile) {
-                card.addEventListener('click', (e) => {
+                card.draggable = false;
+                let lastTap = 0;
+
+                card.addEventListener('pointerup', (e) => {
                     const el = e.currentTarget as HTMLElement;
                     if (el.classList.contains('face-down')) return;
 
-                    // double-tap
                     const now = Date.now();
-                    const lastTap = (el as any)._lastTap || 0;
-                    (el as any)._lastTap = now;
-                    if (now - lastTap < 300) { onCardDoubleClick(e as any); return; }
+                    const dt = now - lastTap;
+                    lastTap = now;
 
-                    // tek tap → seç / taşı
+                    // 👆👆 double-tap (240ms eşiği ile hızlı)
+                    if (dt < 240) { onCardDoubleClick(e as any); return; }
+
+                    // 👆 tek tap → seç / taşı
                     const selected = document.querySelector('.card.selected') as HTMLElement | null;
                     if (!selected) {
                         el.classList.add('selected');
-                        try { (navigator as any).vibrate?.(15); } catch {}
+                        try { (navigator as any).vibrate?.(12); } catch {}
                         return;
                     }
-
                     if (selected === el) {
                         el.classList.remove('selected');
                         return;
                     }
-
                     const src = selected.parentElement as HTMLElement;
                     const dest = el.parentElement as HTMLElement;
-                    if (validateMove([selected], dest)) {
-                        moveCards([selected], src, dest);
-                    }
+                    if (validateMove([selected], dest)) moveCards([selected], src, dest);
                     selected.classList.remove('selected');
                 });
             }
@@ -161,29 +162,22 @@ export default function SolitaireGame({ playerId }: { playerId: string }) {
         }
 
         function dealCards() {
+            // Tableau
             for (let i = 0; i < 7; i++) {
                 const pileCards: Card[] = [];
-
                 for (let j = 0; j <= i; j++) {
                     const cardData = deck.pop();
                     if (cardData) pileCards.push(cardData);
                 }
-
-                if (pileCards.length > 0) {
-                    pileCards[pileCards.length - 1].isFaceUp = true;
-                }
-
+                if (pileCards.length > 0) pileCards[pileCards.length - 1].isFaceUp = true;
                 for (const cardData of pileCards) {
-                    const cardElement = createCardElement(cardData);
-                    (tableauPiles[i] as HTMLElement).appendChild(cardElement);
+                    (tableauPiles[i] as HTMLElement).appendChild(createCardElement(cardData));
                 }
             }
-
+            // Stock
             for (const cardData of deck) {
-                const cardElement = createCardElement(cardData);
-                stockPile.appendChild(cardElement);
+                stockPile.appendChild(createCardElement(cardData));
             }
-
             const placeholder = stockPile.querySelector('.pile-placeholder') as HTMLElement | null;
             if (placeholder) placeholder.style.display = 'none';
         }
@@ -191,20 +185,27 @@ export default function SolitaireGame({ playerId }: { playerId: string }) {
         function resetGame() {
             handleGameEndOrReset(false);
             cardIdCounter = 0;
+
             [stockPile, wastePile, ...foundationPiles, ...tableauPiles].forEach(pile => {
-                (pile as HTMLElement).innerHTML = '';
-                if ((pile as HTMLElement).classList.contains('foundation') || (pile as HTMLElement).id === 'waste' || (pile as HTMLElement).id === 'stock')
-                    (pile as HTMLElement).innerHTML = '<div class="pile-placeholder"></div>';
+                const el = pile as HTMLElement;
+                el.innerHTML = '';
+                if (el.classList.contains('foundation') || el.id === 'waste' || el.id === 'stock') {
+                    el.innerHTML = '<div class="pile-placeholder"></div>';
+                }
             });
+
             winModal.classList.remove('show');
             leaderboardModal.classList.remove('show');
             if (autoFinishBtn) autoFinishBtn.style.display = 'none';
             winningPlayerNameDisplay.textContent = currentPlayerId;
+
             updateScore(0, true);
             createDeck();
             shuffleDeck();
             dealCards();
-            gameContainer.classList.add('active'); // ✅ görünürlük garantisi
+
+            // ✅ görünürlük garantisi (splash sonrası)
+            gameContainer.classList.add('active');
         }
 
         function validateMove(cardsToMove: HTMLElement[], destPile: HTMLElement) {
@@ -230,9 +231,13 @@ export default function SolitaireGame({ playerId }: { playerId: string }) {
 
         function moveCards(cards: HTMLElement[], fromPile: HTMLElement, toPile: HTMLElement) {
             cards.forEach(card => toPile.appendChild(card));
+
+            // skor
             if (toPile.classList.contains('foundation')) updateScore(10);
             else if (fromPile.id === 'waste' && toPile.classList.contains('tableau')) updateScore(5);
             else if (fromPile.classList.contains('foundation') && toPile.classList.contains('tableau')) updateScore(-15);
+
+            // tableau'da üst kartı çevir
             if (fromPile.classList.contains('tableau') && fromPile.children.length > 0) {
                 const topCard = fromPile.lastElementChild as HTMLElement;
                 if (topCard.classList.contains('face-down')) {
@@ -243,27 +248,32 @@ export default function SolitaireGame({ playerId }: { playerId: string }) {
             }
         }
 
+        // 💻 Drag & Drop (web)
         function onDragStart(e: DragEvent) {
             const draggedCard = e.target as HTMLElement;
-            if (draggedCard.classList.contains('face-down')) return;
+            if (!draggedCard || draggedCard.classList.contains('face-down')) return;
             const pile = draggedCard.parentElement as HTMLElement;
             if (pile.classList.contains('tableau')) {
                 const all = Array.from(pile.children) as HTMLElement[];
                 const idx = all.indexOf(draggedCard);
                 draggedCards = all.slice(idx);
-            } else draggedCards = [draggedCard];
-            e.dataTransfer!.setData('text/plain', draggedCard.id);
+            } else {
+                draggedCards = [draggedCard];
+            }
+            e.dataTransfer?.setData('text/plain', draggedCard.id);
             setTimeout(() => draggedCards.forEach(c => c.classList.add('dragging')), 0);
         }
         function onDragOver(e: DragEvent) { e.preventDefault(); }
         function onDrop(e: DragEvent) {
             e.preventDefault();
             const dest = e.currentTarget as HTMLElement;
-            if (validateMove(draggedCards, dest))
+            if (draggedCards.length && validateMove(draggedCards, dest)) {
                 moveCards(draggedCards, draggedCards[0].parentElement as HTMLElement, dest);
+            }
         }
         function onDragEnd() { draggedCards.forEach(c => c.classList.remove('dragging')); draggedCards = []; }
 
+        // 💻 dblclick + 📱 double-tap birleşik handler
         function onCardDoubleClick(e: MouseEvent) {
             const card = e.currentTarget as HTMLElement;
             const src = card.parentElement as HTMLElement;
@@ -272,13 +282,13 @@ export default function SolitaireGame({ playerId }: { playerId: string }) {
             for (const foundationPile of Array.from(foundationPiles) as HTMLElement[]) {
                 const top = foundationPile.lastElementChild as HTMLElement | null;
 
-                if ((!top || top.classList.contains('pile-placeholder')) &&
-                    (card.dataset.rank === 'A' || value === 1)) {
+                // boş foundation ve As
+                if ((!top || top.classList.contains('pile-placeholder')) && (card.dataset.rank === 'A' || value === 1)) {
                     moveCards([card], src, foundationPile);
                     updateScore(10);
                     return;
                 }
-
+                // aynı suit ve +1
                 if (top && top.dataset.suit === card.dataset.suit &&
                     parseInt(top.dataset.value!) + 1 === value) {
                     moveCards([card], src, foundationPile);
@@ -290,17 +300,16 @@ export default function SolitaireGame({ playerId }: { playerId: string }) {
 
         // Listeners
         newGameButtons.forEach(b => b.addEventListener('click', resetGame));
-        [...foundationPiles, ...tableauPiles].forEach(p =>
-            (p as HTMLElement).addEventListener('drop', onDrop as any)
-        );
-        [...foundationPiles, ...tableauPiles].forEach(p =>
-            (p as HTMLElement).addEventListener('dragover', onDragOver as any)
-        );
 
-        // 📱 Mobil: boş pile'a dokunarak taşıma (K → boş tableau, A → boş foundation vb.)
+        [...foundationPiles, ...tableauPiles].forEach(p => {
+            (p as HTMLElement).addEventListener('drop', onDrop as any);
+            (p as HTMLElement).addEventListener('dragover', onDragOver as any);
+        });
+
+        // 📱 Mobil: boş pile'a dokunarak taşıma (pointerup ile hızlı)
         if (isMobile) {
             [...foundationPiles, ...tableauPiles].forEach(p => {
-                (p as HTMLElement).addEventListener('click', () => {
+                (p as HTMLElement).addEventListener('pointerup', () => {
                     const selected = document.querySelector('.card.selected') as HTMLElement | null;
                     if (!selected) return;
                     const dest = p as HTMLElement;
@@ -311,15 +320,20 @@ export default function SolitaireGame({ playerId }: { playerId: string }) {
             });
         }
 
+        // stok tıklamaları
         stockPile.addEventListener('click', () => {
-            const card = stockPile.lastElementChild as HTMLElement;
+            const card = stockPile.lastElementChild as HTMLElement | null;
             if (card && !card.classList.contains('pile-placeholder')) {
                 card.classList.remove('face-down');
                 card.draggable = !isMobile;
                 wastePile.appendChild(card);
             } else {
                 const wasteCards = Array.from(wastePile.querySelectorAll('.card')).reverse() as HTMLElement[];
-                wasteCards.forEach(c => { c.classList.add('face-down'); c.draggable = false; stockPile.appendChild(c); });
+                wasteCards.forEach(c => {
+                    c.classList.add('face-down');
+                    c.draggable = false;
+                    stockPile.appendChild(c);
+                });
             }
         });
 
@@ -338,7 +352,7 @@ export default function SolitaireGame({ playerId }: { playerId: string }) {
 
         updatePlayerStatus();
         resetGame();
-        gameContainer.classList.add('active'); // bir kez daha garanti
+        gameContainer.classList.add('active'); // ekstra garanti
     }, [playerId]);
 
     return (
@@ -347,6 +361,7 @@ export default function SolitaireGame({ playerId }: { playerId: string }) {
                 <h1>Solitaire</h1>
                 <div className="score-display">Score: 0</div>
                 <div id="current-player-status"></div>
+
                 <div className="top-piles">
                     <div className="stock-waste-piles">
                         <div id="stock" className="pile"><div className="pile-placeholder"></div></div>
@@ -360,11 +375,13 @@ export default function SolitaireGame({ playerId }: { playerId: string }) {
                         ))}
                     </div>
                 </div>
+
                 <div className="tableau-piles">
                     {[0, 1, 2, 3, 4, 5, 6].map(i => (
                         <div key={i} id={`tableau-${i}`} className="pile tableau"></div>
                     ))}
                 </div>
+
                 <div className="controls">
                     <button className="new-game-btn">New Game</button>
                     <button id="leaderboard-btn" className="control-btn">Leaderboard</button>
