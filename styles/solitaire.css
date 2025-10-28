@@ -35,18 +35,18 @@
     margin-bottom: -58px !important;
     top: calc(var(--stack-index, 0) * var(--stack-gap));
   }
-  
+
   @media (max-width: 600px) {
     .tableau .card {
-      margin-bottom: -64px !important; /* önceki -90 */
+      margin-bottom: -46px !important; /* önceki -90 */
     }
 
     .tableau .card.face-up {
-      margin-bottom: -56px !important; /* önceki -80 */
+      margin-bottom: -40px !important; /* önceki -80 */
     }
 
     .pile.tableau {
-      min-height: calc(var(--card-height) + var(--stack-gap) * 8);
+      min-height: calc(var(--card-height) + var(--stack-gap) * 10);
     }
   }
 
