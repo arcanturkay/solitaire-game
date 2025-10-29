@@ -491,3 +491,34 @@ html, body { touch-action: manipulation; }
 #confetti-canvas {
   will-change: transform;
 }
+/* === Daily Check-in Card === */
+.checkin-wrapper {
+  display: flex; flex-direction: column; align-items: center;
+  gap: 6px; margin: 10px 0 6px 0;
+}
+.checkin-btn {
+  background: linear-gradient(90deg, #18793a, #42b86c);
+  color: #fff; border: none; border-radius: 12px;
+  padding: 10px 20px; font-size: 1rem; font-weight: 800;
+  letter-spacing: .2px; cursor: pointer;
+  box-shadow: 0 4px 12px rgba(0,0,0,.25);
+  transition: transform .15s ease, box-shadow .2s ease, filter .2s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+.checkin-btn:hover { transform: translateY(-1px); box-shadow: 0 6px 16px rgba(0,0,0,.28); }
+.checkin-btn:active { transform: translateY(0); filter: brightness(.96); }
+
+.checkin-btn[aria-disabled="true"],
+.checkin-btn.checked {
+  background: linear-gradient(90deg, #2a4c6b, #3b6a96);
+  color: #d5f2e3; cursor: default; box-shadow: none;
+}
+
+.checkin-btn.pulse { animation: btnPulse .45s ease; }
+@keyframes btnPulse {
+  0% { transform: scale(1); }
+  40% { transform: scale(1.06); }
+  100% { transform: scale(1); }
+}
+
+.checkin-hint { color: rgba(255,255,255,.85); font-size: .86rem; }
