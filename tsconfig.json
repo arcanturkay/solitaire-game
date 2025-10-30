@@ -23,7 +23,13 @@
       {
         "name": "next"
       }
-    ]
+    ],
+
+    /* ✅ EKLENENLER */
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["./*"]
+    }
   },
   "include": [
     "next-env.d.ts",
