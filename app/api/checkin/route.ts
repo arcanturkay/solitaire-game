@@ -54,7 +54,7 @@ export async function POST(req: Request) {
 
     // KV — görüntü adını cache’le
     if (displayName) {
-      await kv.hset(KV_KEYS.PROFILE_HASH, addr, displayName);
+      await kv.hset(KV_KEYS.PROFILE_HASH, { [addr]: displayName });
     }
 
     // (opsiyonel) On-chain checkin puanı yaz

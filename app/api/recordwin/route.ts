@@ -49,7 +49,7 @@ export async function POST(req: Request) {
     // ---- KV güncelle ----
     const addr = playerAddress.toLowerCase();
     await kv.zincrby(KV_KEYS.SCORE_ZSET, s, addr);
-    if (displayName) await kv.hset(KV_KEYS.PROFILE_HASH, addr, displayName);
+    if (displayName) await kv.hset(KV_KEYS.PROFILE_HASH, { [addr]: displayName });
 
     return NextResponse.json({
       ok: true,

@@ -42,5 +42,6 @@ export async function kvHset(key: string, obj: Record<string, any>) {
 }
 
 export async function kvHgetall<T = Record<string, any>>(key: string): Promise<T | {}> {
-  return (await kv.hgetall<T>(key)) ?? {};
+  const data = await kv.hgetall(key);
+  return (data as T) ?? {};
 }
