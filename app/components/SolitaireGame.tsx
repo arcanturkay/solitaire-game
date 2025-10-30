@@ -302,20 +302,40 @@ function checkWinCondition() {
       }
     }
 
-    async function openCheckinLeaderboard() {
-      const base =
-      process.env.NEXT_PUBLIC_BASE_URL || window.location.origin;
-      const r = await fetch(`${base}/api/leaderboard/checkin?limit=20`);
-      const d = await r.json();
-      checkInLbTbody.innerHTML = '';
-      (d.items || []).forEach((it: any, i: number) => {
-        const confirmed = it.onchain ? '✅' : '';
-        const tr = document.createElement('tr');
-        tr.innerHTML = `<td>${i + 1}</td><td>${it.name} ${confirmed}</td><td>${it.points}</td>`;
-        checkInLbTbody.appendChild(tr);
-      });
-      checkInLbModal.classList.add('show');
+async function openCheckinLeaderboard() {
+  try {
+    // ✅ BASE_URL'i .env'den al, fallback olarak sabit vercel domainini kullan
+    const base = process.env.NEXT_PUBLIC_BASE_URL || "https://solitaire-frame.vercel.app";
+
+    const r = await fetch(`${base}/api/leaderboard/checkin?limit=20`, {
+      method: "GET",
+      headers: {
+        "Cache-Control": "no-store",
+        "Access-Control-Allow-Origin": "*",
+      },
+    });
+
+    if (!r.ok) {
+      console.error("checkin fetch failed:", r.status, await r.text());
+      return;
     }
+
+    const d = await r.json();
+    console.log("📊 Check-in leaderboard data:", d);
+
+    checkInLbTbody.innerHTML = '';
+    (d.items || []).forEach((it: any, i: number) => {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `<td>${i + 1}</td><td>${it.name}</td><td>${it.points}</td>`;
+      checkInLbTbody.appendChild(tr);
+    });
+
+    checkInLbModal.classList.add('show');
+  } catch (err) {
+    console.error("Failed to fetch leaderboard:", err);
+  }
+}
+x
 
 
     async function openScoreLeaderboard() {
