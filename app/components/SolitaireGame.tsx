@@ -304,35 +304,39 @@ function checkWinCondition() {
 
 async function openCheckinLeaderboard() {
   try {
-    // ✅ BASE_URL'i .env'den al, fallback olarak sabit vercel domainini kullan
     const base = process.env.NEXT_PUBLIC_BASE_URL || "https://solitaire-frame.vercel.app";
+    const url = `${base}/api/leaderboard/checkin?limit=20`;
 
-    const r = await fetch(`${base}/api/leaderboard/checkin?limit=20`, {
+    console.log("📡 Fetching leaderboard from:", url);
+
+    const r = await fetch(url, {
       method: "GET",
       headers: {
         "Cache-Control": "no-store",
+        "Content-Type": "application/json",
         "Access-Control-Allow-Origin": "*",
       },
+      mode: "cors",
     });
 
     if (!r.ok) {
-      console.error("checkin fetch failed:", r.status, await r.text());
+      console.error("❌ leaderboard fetch failed:", r.status, await r.text());
       return;
     }
 
     const d = await r.json();
-    console.log("📊 Check-in leaderboard data:", d);
+    console.log("📊 leaderboard data:", d);
 
-    checkInLbTbody.innerHTML = '';
+    checkInLbTbody.innerHTML = "";
     (d.items || []).forEach((it: any, i: number) => {
-      const tr = document.createElement('tr');
+      const tr = document.createElement("tr");
       tr.innerHTML = `<td>${i + 1}</td><td>${it.name}</td><td>${it.points}</td>`;
       checkInLbTbody.appendChild(tr);
     });
 
-    checkInLbModal.classList.add('show');
+    checkInLbModal.classList.add("show");
   } catch (err) {
-    console.error("Failed to fetch leaderboard:", err);
+    console.error("⚠️ Failed to fetch leaderboard:", err);
   }
 }
 
