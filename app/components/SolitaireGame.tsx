@@ -303,7 +303,9 @@ function checkWinCondition() {
     }
 
     async function openCheckinLeaderboard() {
-      const r = await fetch('/api/leaderboard/checkin?limit=20');
+      const base =
+      process.env.NEXT_PUBLIC_BASE_URL || window.location.origin;
+      const r = await fetch(`${base}/api/leaderboard/checkin?limit=20`);
       const d = await r.json();
       checkInLbTbody.innerHTML = '';
       (d.items || []).forEach((it: any, i: number) => {

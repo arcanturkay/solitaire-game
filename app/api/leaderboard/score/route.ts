@@ -33,7 +33,12 @@ export async function GET(request: Request) {
       })
     );
 
-    return NextResponse.json({ ok: true, items: result });
+    return NextResponse.json({ ok: true, items: result }, {
+  headers: {
+    'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+    'Access-Control-Allow-Origin': '*',
+  },
+});
   } catch (e: any) {
     console.error("score leaderboard error:", e);
     return NextResponse.json({ ok: false, error: e.message }, { status: 500 });
