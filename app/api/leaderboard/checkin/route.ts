@@ -8,14 +8,25 @@ export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
     const limit = Number(searchParams.get("limit") || 20);
 
-    // Yeni Upstash sürümünde zrange + { rev: true, withScores: true }
     const raw = await kv.zrange(KV_KEYS.CHECKIN_POINTS_ZSET, 0, limit - 1, {
       rev: true,
       withScores: true,
     });
 
+    // 🧠 Bazı versiyonlarda flat array dönüyor → normalize et
+    let pairs: [string, number][] = [];
+    if (Array.isArray(raw)) {
+      if (typeof raw[0] === "string" && typeof raw[1] === "number") {
+        for (let i = 0; i < raw.length; i += 2) {
+          pairs.push([raw[i] as string, Number(raw[i + 1])]);
+        }
+      } else {
+        pairs = raw as [string, number][];
+      }
+    }
+
     const result = await Promise.all(
-      raw.map(async ([addr, points]: [string, number]) => {
+      pairs.map(async ([addr, points]) => {
         const name =
           (await kv.hget(KV_KEYS.PROFILE_HASH, addr)) || addr.slice(0, 8);
         return { name, points };
