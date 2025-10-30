@@ -335,8 +335,6 @@ async function openCheckinLeaderboard() {
     console.error("Failed to fetch leaderboard:", err);
   }
 }
-x
-
 
     async function openScoreLeaderboard() {
       const r = await fetch('/api/leaderboard/score?limit=20');
