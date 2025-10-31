@@ -271,15 +271,17 @@ function checkWinCondition() {
     total += (p as HTMLElement).querySelectorAll('.card').length;
   });
 
-  if (total === 52 && !hasWon) {
-    hasWon = true;
-    updateScore(100);
-    saveScoreIfWin(currentPlayerId, score);
+if (total === 52 && !hasWon) {
+  hasWon = true;
 
-    if (winningPlayerNameDisplay)
-      winningPlayerNameDisplay.textContent = displayName || currentPlayerId;
+  // ✅ Oyuncunun mevcut skorunu kaydet (ekstra puan ekleme)
+  saveScoreIfWin(currentPlayerId, score);
 
-    winModal.classList.add('show');
+  // ✅ Modalda gerçek skor göster
+  if (winningPlayerNameDisplay)
+    winningPlayerNameDisplay.textContent = `${displayName || currentPlayerId} (${score} pts)`;
+
+  winModal.classList.add('show');
 
     // 🟡 Başta pending durumu göster
     const confirmDiv = document.getElementById('onchain-confirm');
