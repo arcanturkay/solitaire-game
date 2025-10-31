@@ -1,4 +1,8 @@
 // app/api/recordwin/route.ts
+
+// 🚀 ethers RPC çağrısı için Node runtime
+export const runtime = "nodejs";
+
 import { NextResponse } from "next/server";
 import { ethers } from "ethers";
 import { kv, KV_KEYS } from "@/app/lib/kv";
@@ -19,48 +23,65 @@ export async function POST(req: Request) {
     }
 
     // ---- Blockchain setup ----
-    const provider = new ethers.JsonRpcProvider(process.env.BASE_RPC!);
-    const signer = new ethers.Wallet(process.env.PRIVATE_KEY!, provider);
+    const rpc = process.env.BASE_RPC;
+    const pk = process.env.PRIVATE_KEY;
     const contractAddress = process.env.CHECKIN_CONTRACT!;
-
-    console.log("⚙️ recordWinFor params:", {
-      player: playerAddress,
-      score: s,
-      signer: signer.address,
-      contract: contractAddress,
-    });
-
-    const contract = new ethers.Contract(contractAddress, CHECKIN_ABI, signer);
-
-    // 🧠 Ön kontrol: kontrat owner'ı bu signer mı?
-    const owner = await contract.owner();
-    if (owner.toLowerCase() !== signer.address.toLowerCase()) {
-      throw new Error(`Signer is not owner (contract owner = ${owner})`);
+    if (!rpc || !pk) {
+      console.warn("⚠️ Missing RPC or PRIVATE_KEY env, skipping on-chain write");
     }
 
-    // ---- Transaction ----
-    console.log("🚀 Sending tx...");
-    const tx = await contract.recordWinFor(playerAddress, s);
-    console.log("⏳ Tx sent:", tx.hash);
+    let txHash: string | null = null;
+    let onchainFailed = false;
 
-    const rc = await tx.wait();
-    console.log("✅ Tx confirmed:", rc.transactionHash);
+    if (rpc && pk) {
+      try {
+        const provider = new ethers.JsonRpcProvider(rpc);
+        const signer = new ethers.Wallet(pk, provider);
+        const contract = new ethers.Contract(contractAddress, CHECKIN_ABI, signer);
 
-    // ---- KV güncelle ----
+        console.log("⚙️ recordWinFor params:", {
+          player: playerAddress,
+          score: s,
+          signer: signer.address,
+          contract: contractAddress,
+        });
+
+        // 🧠 Ön kontrol: kontrat owner'ı bu signer mı?
+        const owner = await contract.owner();
+        if (owner.toLowerCase() !== signer.address.toLowerCase()) {
+          throw new Error(`Signer is not owner (contract owner = ${owner})`);
+        }
+
+        // ---- Transaction ----
+        console.log("🚀 Sending tx...");
+        const tx = await contract.recordWinFor(playerAddress, s);
+        console.log("⏳ Tx sent:", tx.hash);
+
+        const rc = await tx.wait();
+        txHash = rc.transactionHash;
+        console.log("✅ Tx confirmed:", txHash);
+      } catch (chainErr) {
+        onchainFailed = true;
+        console.error("⚠️ On-chain recordWin failed:", chainErr);
+      }
+    }
+
+    // ---- KV güncelle (her durumda yapılır) ----
     const addr = playerAddress.toLowerCase();
     await kv.zincrby(KV_KEYS.SCORE_ZSET, s, addr);
     if (displayName) await kv.hset(KV_KEYS.PROFILE_HASH, { [addr]: displayName });
 
     return NextResponse.json({
       ok: true,
-      txHash: rc.transactionHash,
+      txHash,
       contract: contractAddress,
+      onchainFailed,
     });
   } catch (e: any) {
     console.error("💥 recordWin error:", e);
     return NextResponse.json(
-      { ok: false, error: e?.message ?? "internal error" },
-      { status: 500 }
+        { ok: false, error: e?.message ?? "internal error" },
+        { status: 500 }
     );
   }
 }
