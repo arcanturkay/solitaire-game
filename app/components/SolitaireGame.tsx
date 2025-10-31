@@ -215,25 +215,43 @@ export default function SolitaireGame({
 function selectOrMoveCard(card: HTMLElement) {
   if (card.classList.contains("face-down")) return;
 
-  // seçilmemişse: seç
+  // İlk dokunuş: seç
   if (!selectedCard) {
     selectedCard = card;
     card.classList.add("selected");
     return;
   }
 
-  // aynı karta tekrar dokunduysan: seçimi kaldır
+  // Aynı karta dokunulduysa seçimi kaldır
   if (selectedCard === card) {
     card.classList.remove("selected");
     selectedCard = null;
     return;
   }
 
-  // 💡 Yeni ekleme: eğer ikinci dokunuş bir pile üzerindeyse, oraya taşımayı dene
-  const destPile = card.closest(".pile") as HTMLElement;
-  const fromPile = selectedCard.parentElement as HTMLElement;
+  // 🔥 Yeni: hedef sütunu belirle
+  let destPile: HTMLElement | null = null;
 
-  // Foundation ya da tableau fark etmez, uygun olanı bul
+  // Eğer dokunduğumuz şey bir kart ise -> o kartın parent pile'ını bul
+  if (card.classList.contains("card")) {
+    destPile = card.closest(".pile") as HTMLElement | null;
+  }
+
+  // Eğer boş sütuna dokunulduysa (örneğin placeholder'a)
+  if (!destPile && card.classList.contains("pile-placeholder")) {
+    destPile = card.parentElement as HTMLElement;
+  }
+
+  // Eğer hâlâ bulunamadıysa (örneğin kartın üstü ama sütun dışı), çık
+  if (!destPile) {
+    selectedCard.classList.remove("selected");
+    selectedCard = card;
+    card.classList.add("selected");
+    return;
+  }
+
+  // 🧠 Move check
+  const fromPile = selectedCard.parentElement as HTMLElement;
   if (validateMove([selectedCard], destPile)) {
     moveCards([selectedCard], fromPile, destPile);
     selectedCard.classList.remove("selected");
@@ -241,7 +259,7 @@ function selectOrMoveCard(card: HTMLElement) {
     return;
   }
 
-  // Uygun değilse, yeni kartı seç
+  // Uygun değilse sadece seçimi değiştir
   selectedCard.classList.remove("selected");
   selectedCard = card;
   card.classList.add("selected");
