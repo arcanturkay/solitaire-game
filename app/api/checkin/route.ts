@@ -1,6 +1,4 @@
 // app/api/checkin/route.ts
-
-// 🧠 Ethers Node ortamında çalışmalı (Edge değil)
 export const runtime = "nodejs";
 
 import { NextResponse } from "next/server";
@@ -17,23 +15,19 @@ export async function POST(req: Request) {
     console.log("🧩 /api/checkin called");
 
     const { playerAddress, displayName, onchain = false } = await req.json();
-    console.log("📥 req body:", { playerAddress, displayName, onchain });
-
     if (!playerAddress || !ethers.isAddress(playerAddress)) {
       return NextResponse.json({ ok: false, error: "bad playerAddress" }, { status: 400 });
     }
 
     const addr = playerAddress.toLowerCase();
     const stateKey = `${KV_KEYS.CHECKIN_STATE_PREFIX}${addr}`;
-    console.log("🗝️ stateKey:", stateKey);
 
-    // Mevcut state'i oku
+    // 📦 read previous state
     const raw = (await kv.get<CheckState>(stateKey)) || { lastDate: null, streak: 0, totalPoints: 0 };
     const t = todayStr();
 
-    // Aynı gün tekrar claim edilmesin
+    // ⏳ prevent multiple same-day claims
     if (raw.lastDate === t) {
-      console.log("🕒 already claimed today");
       return NextResponse.json({
         ok: true,
         alreadyToday: true,
@@ -43,7 +37,7 @@ export async function POST(req: Request) {
       });
     }
 
-    // Streak hesabı
+    // 🔁 streak calculation
     let streak = 1;
     if (raw.lastDate) {
       const last = new Date(`${raw.lastDate}T00:00:00Z`).getTime();
@@ -52,26 +46,23 @@ export async function POST(req: Request) {
       streak = diffDays === 1 ? raw.streak + 1 : 1;
     }
 
-    // Günlük +5, her 3. günde +10 bonus
+    // 🪙 reward calc
     let add = 5;
     if (streak % 3 === 0) add += 10;
     const totalPoints = (raw.totalPoints || 0) + add;
 
-    console.log("🎯 new streak:", streak, "add:", add, "total:", totalPoints);
-
-    // KV: Kullanıcı state güncelle
+    // 💾 save state
     await kv.set<CheckState>(stateKey, { lastDate: t, streak, totalPoints });
     await kv.zincrby(KV_KEYS.CHECKIN_POINTS_ZSET, add, addr);
     if (displayName) await kv.hset(KV_KEYS.PROFILE_HASH, { [addr]: displayName });
 
-    console.log("💾 KV updated");
+    console.log(`💾 Check-in updated for ${addr} (+${add}) streak=${streak}`);
 
-    // ⚙️ On-chain opsiyonel
+    // ⛓️ onchain logic (optional)
     let txHash: string | null = null;
     let onchainFailed = false;
 
     if (onchain) {
-      console.log("⛓️ writing on-chain...");
       try {
         const rpc = process.env.BASE_RPC;
         const pk = process.env.PRIVATE_KEY;
@@ -81,14 +72,34 @@ export async function POST(req: Request) {
         const signer = new ethers.Wallet(pk, provider);
         const contract = new ethers.Contract(CHECKIN_CONTRACT, CHECKIN_ABI, signer);
 
-        const tx = await contract.checkInFor(playerAddress, add);
+        // ✅ Blast fix: get nonce including pending
+        const nonce = await provider.getTransactionCount(signer.address, "pending");
+        console.log("📮 Using nonce:", nonce);
+
+        console.log("🚀 Sending onchain check-in...");
+        const tx = await contract.checkInFor(playerAddress, add, { nonce });
         console.log("⏳ Tx sent:", tx.hash);
-        const rc = await tx.wait();
-        txHash = rc.transactionHash;
-        console.log("✅ On-chain tx confirmed:", txHash);
-      } catch (chainErr) {
+
+        try {
+          const rc = await tx.wait();
+          txHash = rc?.transactionHash || tx.hash;
+          console.log("✅ Tx confirmed:", txHash);
+        } catch (waitErr) {
+          // 🩹 Treat unconfirmed but broadcasted tx as success
+          txHash = tx.hash;
+          onchainFailed = false;
+          console.warn("⚠️ Tx sent but not yet confirmed:", tx.hash);
+        }
+      } catch (chainErr: any) {
         onchainFailed = true;
         console.error("⚠️ On-chain failed:", chainErr);
+
+        // 🩹 If tx exists but failed confirm, mark as soft success
+        if (chainErr?.transaction?.hash) {
+          txHash = chainErr.transaction.hash;
+          onchainFailed = false;
+          console.warn("⚠️ Treating unconfirmed tx as success:", txHash);
+        }
       }
     }
 

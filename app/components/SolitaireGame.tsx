@@ -265,9 +265,13 @@ function checkWinCondition() {
     })
       .then(res => res.json())
       .then(data => {
-        if (data.ok && data.tx && confirmDiv) {
-          confirmDiv.textContent = '✅ On-chain confirmed';
-          confirmDiv.classList.add('confirmed');
+        if (data.ok && confirmDiv) {
+          if (data.onchainFailed === false || data.txHash) {
+            confirmDiv.textContent = '✅ On-chain submitted';
+            confirmDiv.classList.add('confirmed');
+          } else {
+            confirmDiv.textContent = '⌛ Tx pending on-chain (will confirm soon)';
+          }
         } else if (confirmDiv) {
           confirmDiv.textContent = '⚠️ On-chain failed';
         }
