@@ -1,7 +1,6 @@
 // app/api/recordwin/route.ts
 
-// 🚀 ethers RPC çağrısı için Node runtime
-export const runtime = "nodejs";
+export const runtime = "nodejs"; // ✅ Node runtime for ethers
 
 import { NextResponse } from "next/server";
 import { ethers } from "ethers";
@@ -22,14 +21,13 @@ export async function POST(req: Request) {
       return NextResponse.json({ ok: false, error: "bad score" }, { status: 400 });
     }
 
-    // 🧪 SIMULATION MODE — blockchain çağrısı olmadan test
-    if (simulate) {
+    // ---- Simulation Mode (only for dev/test) ----
+    if (simulate || process.env.NODE_ENV !== "production") {
       console.log("🧪 Simulating recordWin:", { playerAddress, score, displayName });
-      await new Promise((r) => setTimeout(r, 1200)); // kısa gecikme efekti
+      await new Promise((r) => setTimeout(r, 800));
       const fakeTxHash = "0xSIMULATED" + Math.random().toString(16).slice(2, 10);
       console.log("✅ Simulated txHash:", fakeTxHash);
 
-      // KV kayıtları yine güncellensin
       const addr = playerAddress.toLowerCase();
       await kv.zincrby(KV_KEYS.SCORE_ZSET, s, addr);
       if (displayName) await kv.hset(KV_KEYS.PROFILE_HASH, { [addr]: displayName });
@@ -42,49 +40,53 @@ export async function POST(req: Request) {
       });
     }
 
-    // ---- Blockchain setup ----
+    // ---- Real On-chain Mode ----
     const rpc = process.env.BASE_RPC;
     const pk = process.env.PRIVATE_KEY;
     const contractAddress = process.env.CHECKIN_CONTRACT!;
+
     if (!rpc || !pk) {
-      console.warn("⚠️ Missing RPC or PRIVATE_KEY env, skipping on-chain write");
+      throw new Error("Missing BASE_RPC or PRIVATE_KEY in environment");
     }
 
+    const provider = new ethers.JsonRpcProvider(rpc);
+    const signer = new ethers.Wallet(pk, provider);
+    const contract = new ethers.Contract(contractAddress, CHECKIN_ABI, signer);
+
+    console.log("⚙️ recordWinFor params:", {
+      player: playerAddress,
+      score: s,
+      signer: signer.address,
+      contract: contractAddress,
+    });
+
+    // 🧠 Verify signer is contract owner
+    const owner = await contract.owner();
+    if (owner.toLowerCase() !== signer.address.toLowerCase()) {
+      throw new Error(`Signer is not owner (contract owner = ${owner})`);
+    }
+
+    console.log("🚀 Sending tx...");
+    const tx = await contract.recordWinFor(playerAddress, s);
+    console.log("⏳ Tx sent:", tx.hash);
+
     let txHash: string | null = null;
-    let onchainFailed = false;
-
-    if (rpc && pk) {
-      try {
-        const provider = new ethers.JsonRpcProvider(rpc);
-        const signer = new ethers.Wallet(pk, provider);
-        const contract = new ethers.Contract(contractAddress, CHECKIN_ABI, signer);
-
-        console.log("⚙️ recordWinFor params:", {
-          player: playerAddress,
-          score: s,
-          signer: signer.address,
-          contract: contractAddress,
-        });
-
-        const owner = await contract.owner();
-        if (owner.toLowerCase() !== signer.address.toLowerCase()) {
-          throw new Error(`Signer is not owner (contract owner = ${owner})`);
-        }
-
-        console.log("🚀 Sending tx...");
-        const tx = await contract.recordWinFor(playerAddress, s);
-        console.log("⏳ Tx sent:", tx.hash);
-
-        const rc = await tx.wait();
-        txHash = rc.hash || tx.hash;
-        console.log("✅ Tx confirmed:", txHash);
-      } catch (chainErr) {
-        onchainFailed = true;
-        console.error("⚠️ On-chain recordWin failed:", chainErr);
+    try {
+      const rc = await tx.wait(1); // wait for 1 confirmation (usually enough on Base)
+      txHash = rc?.hash || tx.hash;
+      console.log("✅ Tx confirmed:", txHash);
+    } catch (waitErr) {
+      console.warn("⚠️ tx.wait() timeout, falling back to polling...");
+      const receipt = await provider.waitForTransaction(tx.hash, 1, 20000); // 20s fallback
+      if (receipt) {
+        txHash = receipt.hash;
+        console.log("✅ Tx confirmed via polling:", txHash);
+      } else {
+        console.error("❌ Tx unconfirmed after fallback");
       }
     }
 
-    // ---- KV güncelle (her durumda yapılır) ----
+    // ---- KV update (always done) ----
     const addr = playerAddress.toLowerCase();
     await kv.zincrby(KV_KEYS.SCORE_ZSET, s, addr);
     if (displayName) await kv.hset(KV_KEYS.PROFILE_HASH, { [addr]: displayName });
@@ -93,7 +95,7 @@ export async function POST(req: Request) {
       ok: true,
       txHash,
       contract: contractAddress,
-      onchainFailed,
+      onchainFailed: !txHash,
     });
   } catch (e: any) {
     console.error("💥 recordWin error:", e);
