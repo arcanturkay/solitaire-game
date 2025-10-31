@@ -12,8 +12,8 @@ async function waitForConfirmWithRetry(provider: ethers.JsonRpcProvider, txHash:
     try {
       console.log(`⏳ Waiting for confirmation (try ${i + 1}/${retries})...`);
       const receipt = await provider.waitForTransaction(txHash, 1, 15000);
-      if (receipt && receipt.transactionHash) {
-        console.log("✅ Tx confirmed (poll):", receipt.transactionHash);
+      if (receipt && receipt.hash) {
+        console.log("✅ Tx confirmed (poll):", receipt.hash);
         return receipt;
       }
     } catch (err: any) {
@@ -81,7 +81,7 @@ export async function POST(req: Request) {
         // ✅ Receipt polling with retry (async)
         waitForConfirmWithRetry(provider, tx.hash, 3, 5000)
             .then((rc) => {
-              if (rc) console.log("✅ Final confirmed:", rc.transactionHash);
+              if (rc) console.log("✅ Final confirmed:", rc.hash);
               else console.warn("⚠️ Final status: unconfirmed after all retries");
             })
             .catch((err) => console.error("💥 Async confirm error:", err));
