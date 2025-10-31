@@ -6,6 +6,26 @@ import { ethers } from "ethers";
 import { kv, KV_KEYS } from "@/app/lib/kv";
 import { CHECKIN_ABI } from "@/app/lib/contract";
 
+// 🔁 Transaction confirmation için retry fonksiyonu
+async function waitForConfirmWithRetry(provider: ethers.JsonRpcProvider, txHash: string, retries = 3, delayMs = 5000) {
+  for (let i = 0; i < retries; i++) {
+    try {
+      console.log(`⏳ Waiting for confirmation (try ${i + 1}/${retries})...`);
+      const receipt = await provider.waitForTransaction(txHash, 1, 15000);
+      if (receipt && receipt.transactionHash) {
+        console.log("✅ Tx confirmed (poll):", receipt.transactionHash);
+        return receipt;
+      }
+    } catch (err: any) {
+      console.warn(`⚠️ waitForTransaction attempt ${i + 1} failed:`, err?.message);
+    }
+    console.log(`🕐 Retrying in ${delayMs / 1000}s...`);
+    await new Promise((res) => setTimeout(res, delayMs));
+  }
+  console.warn(`⚠️ Tx still unconfirmed after ${retries} attempts`);
+  return null;
+}
+
 export async function POST(req: Request) {
   try {
     const { playerAddress, score, displayName } = await req.json();
@@ -24,6 +44,7 @@ export async function POST(req: Request) {
     const rpc = process.env.BASE_RPC;
     const pk = process.env.PRIVATE_KEY;
     const contractAddress = process.env.CHECKIN_CONTRACT!;
+
     if (!rpc || !pk) {
       console.warn("⚠️ Missing RPC or PRIVATE_KEY env, skipping on-chain write");
     }
@@ -54,21 +75,16 @@ export async function POST(req: Request) {
         // ---- Transaction ----
         console.log("🚀 Sending tx...");
         const tx = await contract.recordWinFor(playerAddress, s);
-        console.log("⏳ Tx sent:", tx.hash);
         txHash = tx.hash;
+        console.log("⏳ Tx sent:", tx.hash);
 
-        // 👇 Non-blocking confirmation
-        tx.wait(1)
+        // ✅ Receipt polling with retry (async)
+        waitForConfirmWithRetry(provider, tx.hash, 3, 5000)
             .then((rc) => {
-              console.log("✅ Tx confirmed async:", rc.transactionHash);
+              if (rc) console.log("✅ Final confirmed:", rc.transactionHash);
+              else console.warn("⚠️ Final status: unconfirmed after all retries");
             })
-            .catch((waitErr) => {
-              console.error("⚠️ Async tx.wait failed:", {
-                message: waitErr?.message,
-                reason: waitErr?.reason,
-                code: waitErr?.code,
-              });
-            });
+            .catch((err) => console.error("💥 Async confirm error:", err));
       } catch (chainErr: any) {
         onchainFailed = true;
         onchainError = {

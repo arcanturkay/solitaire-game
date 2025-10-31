@@ -16,6 +16,7 @@ export default function SolitaireGame({
   displayName?: string;    // örn. Farcaster username
 }) {
   useEffect(() => {
+
     const DOMAIN_TAG = window.location.hostname.replace(/\./g, '_');
     const SCORE_TOTALS_KEY = `solitaireAccumulatedScores_${DOMAIN_TAG}`;
     const currentPlayerId = playerId || '@guest';
@@ -117,7 +118,40 @@ export default function SolitaireGame({
       const ph = stockPile.querySelector('.pile-placeholder') as HTMLElement|null;
       if (ph) ph.style.display = 'none';
     }
+    // 🎯 Tüm kartlar açıldığında otomatik foundation'a taşıma
+    function autoFinishIfAllOpen() {
+      const hidden = document.querySelectorAll('.card.face-down');
+      if (hidden.length === 0 && !hasWon) {
+        console.log("✨ All cards face-up → auto-finishing...");
+        let moved = true;
+        while (moved) {
+          moved = false;
+          const allTableau = Array.from(tableauPiles) as HTMLElement[];
+          for (const pile of allTableau) {
+            const top = pile.lastElementChild as HTMLElement | null;
+            if (!top || top.classList.contains('face-down')) continue;
 
+            const v = parseInt(top.dataset.value!);
+            for (const f of Array.from(foundationPiles) as HTMLElement[]) {
+              const fTop = f.lastElementChild as HTMLElement | null;
+              if (!fTop || fTop.classList.contains('pile-placeholder')) {
+                if (top.dataset.rank === 'A' || v === 1) {
+                  moveCards([top], pile, f);
+                  moved = true;
+                  break;
+                }
+              } else if (fTop.dataset.suit === top.dataset.suit &&
+                  parseInt(fTop.dataset.value!) + 1 === v) {
+                moveCards([top], pile, f);
+                moved = true;
+                break;
+              }
+            }
+          }
+        }
+        console.log("🏁 Auto-finish complete!");
+      }
+    }
     function validateMove(cardsToMove: HTMLElement[], destPile: HTMLElement) {
       const topCardToMove = cardsToMove[0];
       if (destPile === topCardToMove.parentElement) return false;
@@ -148,7 +182,7 @@ export default function SolitaireGame({
         if (top.classList.contains('face-down')) { top.classList.remove('face-down'); top.draggable = true; updateScore(5); }
       }
       checkWinCondition();
-      autoCheckForFullOpen();
+      autoFinishIfAllOpen();
     }
 
     function onDragStart(e: DragEvent) {
@@ -200,14 +234,6 @@ export default function SolitaireGame({
       }catch(e){ console.error('recordwin failed', e); }
     }
 
-    // 🔥 auto-win: tüm kartlar açıldığında otomatik kazanç
-    function autoCheckForFullOpen() {
-      const hiddenCards = document.querySelectorAll('.card.face-down');
-      if (hiddenCards.length === 0 && !hasWon) {
-        checkWinCondition();
-      }
-    }
-
 function checkWinCondition() {
   let total = 0;
   foundationPiles.forEach(p => {
@@ -252,7 +278,7 @@ function checkWinCondition() {
       });
   }
 }
-    
+
     function resetGame() {
   cardIdCounter = 0;
   hasWon = false;
@@ -360,7 +386,6 @@ async function openCheckinLeaderboard() {
         const wasteCards = Array.from(wastePile.querySelectorAll('.card')).reverse() as HTMLElement[];
         wasteCards.forEach(c=>{ c.classList.add('face-down'); c.draggable=false; stockPile.appendChild(c); });
       }
-      autoCheckForFullOpen();
     });
 
     [...foundationPiles, ...tableauPiles].forEach(p => (p as HTMLElement).addEventListener('dragover',(e)=>e.preventDefault()));
