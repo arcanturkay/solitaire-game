@@ -1,7 +1,5 @@
 // app/api/recordwin/route.ts
-
-// 🚀 ethers RPC çağrısı için Node runtime
-export const runtime = "nodejs";
+export const runtime = "nodejs"; // 🚀 ethers RPC çağrısı için Node runtime
 
 import { NextResponse } from "next/server";
 import { ethers } from "ethers";
@@ -32,6 +30,7 @@ export async function POST(req: Request) {
 
     let txHash: string | null = null;
     let onchainFailed = false;
+    let onchainError: any = null;
 
     if (rpc && pk) {
       try {
@@ -56,13 +55,29 @@ export async function POST(req: Request) {
         console.log("🚀 Sending tx...");
         const tx = await contract.recordWinFor(playerAddress, s);
         console.log("⏳ Tx sent:", tx.hash);
+        txHash = tx.hash;
 
-        const rc = await tx.wait();
-        txHash = rc.transactionHash;
-        console.log("✅ Tx confirmed:", txHash);
-      } catch (chainErr) {
+        // 👇 Non-blocking confirmation
+        tx.wait(1)
+            .then((rc) => {
+              console.log("✅ Tx confirmed async:", rc.transactionHash);
+            })
+            .catch((waitErr) => {
+              console.error("⚠️ Async tx.wait failed:", {
+                message: waitErr?.message,
+                reason: waitErr?.reason,
+                code: waitErr?.code,
+              });
+            });
+      } catch (chainErr: any) {
         onchainFailed = true;
-        console.error("⚠️ On-chain recordWin failed:", chainErr);
+        onchainError = {
+          message: chainErr.message,
+          reason: chainErr.reason,
+          code: chainErr.code,
+          shortMessage: chainErr.shortMessage,
+        };
+        console.error("⚠️ On-chain recordWin failed:", onchainError);
       }
     }
 
@@ -71,11 +86,13 @@ export async function POST(req: Request) {
     await kv.zincrby(KV_KEYS.SCORE_ZSET, s, addr);
     if (displayName) await kv.hset(KV_KEYS.PROFILE_HASH, { [addr]: displayName });
 
+    // ---- Response ----
     return NextResponse.json({
       ok: true,
       txHash,
       contract: contractAddress,
       onchainFailed,
+      onchainError,
     });
   } catch (e: any) {
     console.error("💥 recordWin error:", e);
