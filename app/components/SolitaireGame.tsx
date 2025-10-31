@@ -212,27 +212,40 @@ export default function SolitaireGame({
       }
     }
 
-    function selectOrMoveCard(card: HTMLElement) {
-      if (card.classList.contains('face-down')) return;
-      if (!selectedCard){ selectedCard=card; card.classList.add('selected'); return; }
-      if (selectedCard===card){ card.classList.remove('selected'); selectedCard=null; return; }
-      const dest = card.parentElement as HTMLElement;
-      if (validateMove([selectedCard], dest)) {
-        moveCards([selectedCard], selectedCard.parentElement as HTMLElement, dest);
-        selectedCard.classList.remove('selected'); selectedCard=null;
-      } else {
-        selectedCard.classList.remove('selected'); selectedCard=card; card.classList.add('selected');
-      }
-    }
+function selectOrMoveCard(card: HTMLElement) {
+  if (card.classList.contains("face-down")) return;
 
-    async function postWinOnchain(s:number){
-      if(!playerAddress) return;
-      try{
-        await fetch('/api/recordwin',{ method:'POST', headers:{'Content-Type':'application/json'},
-          body: JSON.stringify({ playerAddress, score: s, displayName })
-        });
-      }catch(e){ console.error('recordwin failed', e); }
-    }
+  // seçilmemişse: seç
+  if (!selectedCard) {
+    selectedCard = card;
+    card.classList.add("selected");
+    return;
+  }
+
+  // aynı karta tekrar dokunduysan: seçimi kaldır
+  if (selectedCard === card) {
+    card.classList.remove("selected");
+    selectedCard = null;
+    return;
+  }
+
+  // 💡 Yeni ekleme: eğer ikinci dokunuş bir pile üzerindeyse, oraya taşımayı dene
+  const destPile = card.closest(".pile") as HTMLElement;
+  const fromPile = selectedCard.parentElement as HTMLElement;
+
+  // Foundation ya da tableau fark etmez, uygun olanı bul
+  if (validateMove([selectedCard], destPile)) {
+    moveCards([selectedCard], fromPile, destPile);
+    selectedCard.classList.remove("selected");
+    selectedCard = null;
+    return;
+  }
+
+  // Uygun değilse, yeni kartı seç
+  selectedCard.classList.remove("selected");
+  selectedCard = card;
+  card.classList.add("selected");
+}
 
 function checkWinCondition() {
   let total = 0;

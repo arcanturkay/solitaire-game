@@ -106,7 +106,7 @@ export async function POST(req: Request) {
 
     return NextResponse.json({
       ok: true,
-      txHash,
+      tx: txHash,
       contract: contractAddress,
       onchainFailed,
     });
