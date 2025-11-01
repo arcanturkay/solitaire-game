@@ -215,34 +215,52 @@ export default function SolitaireGame({
 function selectOrMoveCard(card: HTMLElement) {
   if (card.classList.contains("face-down")) return;
 
-  // İlk dokunuş: seç
+  // 👇 Eğer ilk seçimse, kartı seç
   if (!selectedCard) {
     selectedCard = card;
     card.classList.add("selected");
     return;
   }
 
-  // Aynı karta dokunulduysa seçimi kaldır
+  // 👇 Aynı karta dokunulduysa seçimi kaldır
   if (selectedCard === card) {
     card.classList.remove("selected");
     selectedCard = null;
     return;
   }
 
-  // 🔥 Yeni: hedef sütunu belirle
+  // 👇 Şimdi ikinci dokunuşta hedefi tespit et
   let destPile: HTMLElement | null = null;
 
-  // Eğer dokunduğumuz şey bir kart ise -> o kartın parent pile'ını bul
+  // Eğer bir kart üzerine tıklanmışsa o kartın sütununu bul
   if (card.classList.contains("card")) {
     destPile = card.closest(".pile") as HTMLElement | null;
   }
 
-  // Eğer boş sütuna dokunulduysa (örneğin placeholder'a)
+  // Eğer boş alana (örneğin placeholder) dokunulduysa
   if (!destPile && card.classList.contains("pile-placeholder")) {
     destPile = card.parentElement as HTMLElement;
   }
 
-  // Eğer hâlâ bulunamadıysa (örneğin kartın üstü ama sütun dışı), çık
+  // 👇 Ek: Eğer foundation’da uygun yer varsa oraya otomatik taşı
+  if (!destPile) {
+    for (const f of Array.from(foundationPiles) as HTMLElement[]) {
+      const top = f.lastElementChild as HTMLElement | null;
+      const v = parseInt(selectedCard.dataset.value!);
+      if (!top || top.classList.contains("pile-placeholder")) {
+        if (v === 1) { // Ace
+          destPile = f;
+          break;
+        }
+      } else if (top.dataset.suit === selectedCard.dataset.suit &&
+                 parseInt(top.dataset.value!) + 1 === v) {
+        destPile = f;
+        break;
+      }
+    }
+  }
+
+  // 👇 Eğer hâlâ uygun hedef yoksa sadece seçim değiştir
   if (!destPile) {
     selectedCard.classList.remove("selected");
     selectedCard = card;
@@ -250,19 +268,18 @@ function selectOrMoveCard(card: HTMLElement) {
     return;
   }
 
-  // 🧠 Move check
+  // 👇 Geçerli bir hamle mi kontrol et
   const fromPile = selectedCard.parentElement as HTMLElement;
   if (validateMove([selectedCard], destPile)) {
     moveCards([selectedCard], fromPile, destPile);
     selectedCard.classList.remove("selected");
     selectedCard = null;
-    return;
+  } else {
+    // 👇 Geçerli değilse seçimi değiştir
+    selectedCard.classList.remove("selected");
+    selectedCard = card;
+    card.classList.add("selected");
   }
-
-  // Uygun değilse sadece seçimi değiştir
-  selectedCard.classList.remove("selected");
-  selectedCard = card;
-  card.classList.add("selected");
 }
 
 function checkWinCondition() {
