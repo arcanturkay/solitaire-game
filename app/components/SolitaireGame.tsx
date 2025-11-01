@@ -215,52 +215,53 @@ export default function SolitaireGame({
 function selectOrMoveCard(card: HTMLElement) {
   if (card.classList.contains("face-down")) return;
 
-  // 👇 Eğer ilk seçimse, kartı seç
+  // 🎯 1. Seçim: kartı seç
   if (!selectedCard) {
     selectedCard = card;
     card.classList.add("selected");
     return;
   }
 
-  // 👇 Aynı karta dokunulduysa seçimi kaldır
+  // 🎯 2. Aynı karta tekrar dokunulduysa: seçimi kaldır
   if (selectedCard === card) {
     card.classList.remove("selected");
     selectedCard = null;
     return;
   }
 
-  // 👇 Şimdi ikinci dokunuşta hedefi tespit et
+  // 🎯 3. Hedef sütunu tespit et
   let destPile: HTMLElement | null = null;
 
-  // Eğer bir kart üzerine tıklanmışsa o kartın sütununu bul
   if (card.classList.contains("card")) {
     destPile = card.closest(".pile") as HTMLElement | null;
   }
 
-  // Eğer boş alana (örneğin placeholder) dokunulduysa
+  // 📦 Boş sütun (placeholder) dokunması
   if (!destPile && card.classList.contains("pile-placeholder")) {
     destPile = card.parentElement as HTMLElement;
   }
 
-  // 👇 Ek: Eğer foundation’da uygun yer varsa oraya otomatik taşı
+  // 🧩 Eğer foundation'a otomatik taşıma uygunsa (örneğin As)
   if (!destPile) {
+    const v = parseInt(selectedCard.dataset.value!);
     for (const f of Array.from(foundationPiles) as HTMLElement[]) {
       const top = f.lastElementChild as HTMLElement | null;
-      const v = parseInt(selectedCard.dataset.value!);
       if (!top || top.classList.contains("pile-placeholder")) {
         if (v === 1) { // Ace
           destPile = f;
           break;
         }
-      } else if (top.dataset.suit === selectedCard.dataset.suit &&
-                 parseInt(top.dataset.value!) + 1 === v) {
+      } else if (
+        top.dataset.suit === selectedCard.dataset.suit &&
+        parseInt(top.dataset.value!) + 1 === v
+      ) {
         destPile = f;
         break;
       }
     }
   }
 
-  // 👇 Eğer hâlâ uygun hedef yoksa sadece seçim değiştir
+  // 🚫 Hedef yoksa sadece seçim değiştir
   if (!destPile) {
     selectedCard.classList.remove("selected");
     selectedCard = card;
@@ -268,57 +269,44 @@ function selectOrMoveCard(card: HTMLElement) {
     return;
   }
 
-  // 👇 Geçerli bir hamle mi kontrol et
+  // 🎯 4. Seçilen kartın altındaki açık kartları da dahil et
   const fromPile = selectedCard.parentElement as HTMLElement;
-  if (validateMove([selectedCard], destPile)) {
-    moveCards([selectedCard], fromPile, destPile);
+  const pileCards = Array.from(fromPile.children) as HTMLElement[];
+  const selectedIndex = pileCards.indexOf(selectedCard);
+  let cardsToMove: HTMLElement[] = [selectedCard];
+
+  if (selectedIndex >= 0) {
+    const tail = pileCards.slice(selectedIndex);
+    cardsToMove = tail.filter(c => !c.classList.contains("face-down"));
+  }
+
+  // ✅ 5. Boş sütuna taşımaya özel kontrol (K kartı ile başlama)
+  const isEmptyTableau = destPile.classList.contains("tableau") &&
+    destPile.children.length === 0;
+
+  if (isEmptyTableau && selectedCard.dataset.rank === "K") {
+    moveCards(cardsToMove, fromPile, destPile);
+    selectedCard.classList.remove("selected");
+    selectedCard = null;
+    return;
+  }
+
+  // ✅ 6. Standart taşıma kontrolü
+  if (validateMove(cardsToMove, destPile)) {
+    moveCards(cardsToMove, fromPile, destPile);
     selectedCard.classList.remove("selected");
     selectedCard = null;
   } else {
-    // 👇 Geçerli değilse seçimi değiştir
     selectedCard.classList.remove("selected");
     selectedCard = card;
     card.classList.add("selected");
   }
 }
 
-
-async function sendWinOnChainAndKV(playerAddr: string, displayName: string, score: number) {
-  const confirmDiv = document.getElementById("onchain-confirm");
-  const setStatus = (txt: string, ok = false) => {
-    if (confirmDiv) {
-      confirmDiv.textContent = txt;
-      confirmDiv.classList.toggle("confirmed", ok);
-    }
-  };
-
-  try {
-    setStatus("⌛ Waiting for wallet...");
-    const { contract, provider } = await getUserContract();
-    const tx = await contract.recordWinFor(playerAddr, score);
-    setStatus("⌛ Sending transaction...");
-    const rc = await provider.waitForTransaction(tx.hash);
-    if (rc?.status === 1) {
-      setStatus("✅ On-chain confirmed", true);
-      // 🎯 KV güncelle
-      await fetch("/api/recordwin", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ playerAddress: playerAddr, score, displayName }),
-      });
-    } else {
-      setStatus("⚠️ Tx failed");
-    }
-  } catch (err) {
-    console.error("user-signed tx error:", err);
-    setStatus("⚠️ Transaction rejected or failed");
-  }
-}
-
-function checkWinCondition() {
+async function checkWinCondition() {
   let total = 0;
   foundationPiles.forEach(p => {
-    total += (p as HTMLElement).querySelectorAll(".card").length;
+    total += (p as HTMLElement).querySelectorAll('.card').length;
   });
 
   if (total === 52 && !hasWon) {
@@ -328,24 +316,44 @@ function checkWinCondition() {
     if (winningPlayerNameDisplay)
       winningPlayerNameDisplay.textContent = `${displayName || currentPlayerId} (${score} pts)`;
 
-    winModal.classList.add("show");
+    winModal.classList.add('show');
 
-    const confirmDiv = document.getElementById("onchain-confirm");
+    const confirmDiv = document.getElementById('onchain-confirm');
     if (confirmDiv) {
-      confirmDiv.textContent = "⌛ Pending on-chain confirmation...";
-      confirmDiv.classList.remove("confirmed");
+      confirmDiv.textContent = '⌛ Waiting for user confirmation...';
+      confirmDiv.classList.remove('confirmed');
     }
 
-    // 🔹 zincir işlemini başlat
-    if (playerAddress && score > 0) {
-      sendWinOnChainAndKV(playerAddress, displayName || "", score);
-    } else if (confirmDiv) {
-      confirmDiv.textContent = "⚠️ Missing wallet address";
+    try {
+      // 🎯 signer'ı kullanıcıdan al
+      const { contract } = await getUserContract(); // bu senin lib/contract.ts içinden signer + contract döndürüyor olmalı
+      const tx = await contract.recordWinFor(playerAddress, score);
+      if (confirmDiv) confirmDiv.textContent = '⏳ Submitted... waiting for confirmation';
+
+      const receipt = await tx.wait();
+      console.log('✅ Tx confirmed:', receipt.transactionHash);
+
+      if (confirmDiv) {
+        confirmDiv.textContent = `✅ On-chain confirmed`;
+        confirmDiv.classList.add('confirmed');
+      }
+
+      // KV veya backend'e bilgi gönder (opsiyonel)
+      await fetch('/api/recordwin', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ playerAddress, score, displayName }),
+      });
+    } catch (err: any) {
+      console.error('⚠️ recordWinFor failed:', err);
+      if (confirmDiv)
+        confirmDiv.textContent = '⚠️ Transaction rejected or failed';
     }
   }
 }
 
-    function resetGame() {
+
+function resetGame() {
   cardIdCounter = 0;
   hasWon = false;
   setScore(0);
@@ -474,6 +482,14 @@ async function openCheckinLeaderboard() {
 
     updatePlayerStatus();
     resetGame();
+    
+      // 📱 Mobil placeholder tap desteği
+    document.querySelectorAll('.pile-placeholder').forEach((ph) => {
+      ph.addEventListener('touchend', () => selectOrMoveCard(ph as HTMLElement));
+      ph.addEventListener('click', () => selectOrMoveCard(ph as HTMLElement));
+    });
+
+  // ✅ useEffect düzgün kapanıyor
   }, [playerId, playerAddress, displayName]);
 
 
