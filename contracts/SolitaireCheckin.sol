@@ -30,12 +30,40 @@ contract SolitaireCheckin {
         owner = msg.sender;
     }
 
+    // ----------------------------------------------------------
+    // 🔹 Yönetim
+    // ----------------------------------------------------------
     function setOperator(address op, bool enabled) external onlyOwner {
         operators[op] = enabled;
         emit OperatorUpdated(op, enabled);
     }
 
+    // ----------------------------------------------------------
+    // 🔹 Admin/Operator fonksiyonları
+    // ----------------------------------------------------------
     function checkInFor(address player, uint256 addPoints) external onlyOwnerOrOperator {
+        _checkIn(player, addPoints);
+    }
+
+    function recordWinFor(address player, uint256 score) external onlyOwnerOrOperator {
+        _recordWin(player, score);
+    }
+
+    // ----------------------------------------------------------
+    // 🔹 Kullanıcı (self-call) fonksiyonları
+    // ----------------------------------------------------------
+    function checkIn(uint256 addPoints) external {
+        _checkIn(msg.sender, addPoints);
+    }
+
+    function recordMyWin(uint256 score) external {
+        _recordWin(msg.sender, score);
+    }
+
+    // ----------------------------------------------------------
+    // 🔹 Internal mantık (tekrarsız)
+    // ----------------------------------------------------------
+    function _checkIn(address player, uint256 addPoints) internal {
         require(player != address(0), "bad player");
         Player storage p = players[player];
         uint256 today = block.timestamp / 1 days;
@@ -50,15 +78,22 @@ contract SolitaireCheckin {
         emit CheckIn(player, today, p.streak, p.totalPoints);
     }
 
-    function recordWinFor(address player, uint256 score) external onlyOwnerOrOperator {
+    function _recordWin(address player, uint256 score) internal {
         require(player != address(0), "bad player");
-        require(score > 0, "score=0");
+        require(score > 0 && score < 5000, "invalid score");
         Player storage p = players[player];
         p.totalPoints += score;
         emit RecordWin(player, score, p.totalPoints);
     }
 
+    // ----------------------------------------------------------
+    // 🔹 View yardımcıları
+    // ----------------------------------------------------------
     function getPlayer(address a) external view returns (Player memory) {
         return players[a];
+    }
+
+    function getMyStats() external view returns (Player memory) {
+        return players[msg.sender];
     }
 }

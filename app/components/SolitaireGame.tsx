@@ -338,16 +338,17 @@ async function checkWinCondition() {
     toAddr = await signer.getAddress(); // signer fallback
   }
 
-  const tx = await contract.recordWinFor(toAddr, score);
+  const tx = await contract.recordMyWin(score);
   if (confirmDiv) confirmDiv.textContent = '⏳ Submitted... waiting for confirmation';
 
   const receipt = await tx.wait();
   console.log('✅ Tx confirmed:', receipt.transactionHash);
 
-  if (confirmDiv) {
-    confirmDiv.textContent = `✅ On-chain confirmed`;
-    confirmDiv.classList.add('confirmed');
-  }
+if (confirmDiv) {
+  const txUrl = `https://basescan.org/tx/${receipt.transactionHash}`;
+  confirmDiv.innerHTML = `✅ On-chain confirmed<br><a href="${txUrl}" target="_blank">View on Basescan</a>`;
+  confirmDiv.classList.add('confirmed');
+}
 
   await fetch('/api/recordwin', {
     method: 'POST',
