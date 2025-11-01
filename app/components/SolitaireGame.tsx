@@ -2,6 +2,8 @@
 import { useEffect } from 'react';
 import '../../styles/solitaire.css';
 import { getUserContract } from "@/app/lib/contract";
+import { ethers } from "ethers";
+
 interface Card {
   suit: string; rank: string; color: 'red' | 'black'; value: number; isFaceUp: boolean;
 }
@@ -324,31 +326,40 @@ async function checkWinCondition() {
       confirmDiv.classList.remove('confirmed');
     }
 
-    try {
-      // 🎯 signer'ı kullanıcıdan al
-      const { contract } = await getUserContract(); // bu senin lib/contract.ts içinden signer + contract döndürüyor olmalı
-      const tx = await contract.recordWinFor(playerAddress, score);
-      if (confirmDiv) confirmDiv.textContent = '⏳ Submitted... waiting for confirmation';
+ try {
+  // 🎯 signer ve contract birlikte al
+  const { contract, signer } = await getUserContract();
 
-      const receipt = await tx.wait();
-      console.log('✅ Tx confirmed:', receipt.transactionHash);
+  // 🧩 playerAddress geçerli değilse signer'dan al
+  let toAddr: string;
+  try {
+    toAddr = ethers.getAddress(playerAddress); // checksum geçerli
+  } catch {
+    toAddr = await signer.getAddress(); // signer fallback
+  }
 
-      if (confirmDiv) {
-        confirmDiv.textContent = `✅ On-chain confirmed`;
-        confirmDiv.classList.add('confirmed');
-      }
+  const tx = await contract.recordWinFor(toAddr, score);
+  if (confirmDiv) confirmDiv.textContent = '⏳ Submitted... waiting for confirmation';
 
-      // KV veya backend'e bilgi gönder (opsiyonel)
-      await fetch('/api/recordwin', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ playerAddress, score, displayName }),
-      });
-    } catch (err: any) {
-      console.error('⚠️ recordWinFor failed:', err);
-      if (confirmDiv)
-        confirmDiv.textContent = '⚠️ Transaction rejected or failed';
-    }
+  const receipt = await tx.wait();
+  console.log('✅ Tx confirmed:', receipt.transactionHash);
+
+  if (confirmDiv) {
+    confirmDiv.textContent = `✅ On-chain confirmed`;
+    confirmDiv.classList.add('confirmed');
+  }
+
+  await fetch('/api/recordwin', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ playerAddress: toAddr, score, displayName }),
+  });
+
+} catch (err: any) {
+  console.error('⚠️ recordWinFor failed:', err);
+  if (confirmDiv)
+    confirmDiv.textContent = '⚠️ Transaction rejected or failed';
+}
   }
 }
 
