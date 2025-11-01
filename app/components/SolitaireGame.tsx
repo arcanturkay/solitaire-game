@@ -294,7 +294,7 @@ if (total === 52 && !hasWon) {
     fetch('/api/recordwin', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ playerAddress, score: 100, displayName }),
+      body: JSON.stringify({ playerAddress, score, displayName }),
     })
       .then(res => res.json())
       .then(data => {
