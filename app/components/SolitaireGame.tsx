@@ -501,12 +501,30 @@ async function openCheckinLeaderboard() {
       ph.addEventListener('click', () => selectOrMoveCard(ph as HTMLElement));
     });
 
+    // 🧪 Manual TX test button
+const testTxBtn = document.getElementById('test-tx-btn');
+if (testTxBtn) {
+  testTxBtn.addEventListener('click', async () => {
+    try {
+      const { contract } = await getUserContract();
+      const tx = await contract.recordMyWin(123); // örnek 123 puan
+      console.log("🎯 Tx submitted:", tx.hash);
+      const receipt = await tx.wait();
+      console.log("✅ Tx confirmed:", receipt.transactionHash);
+      alert(`✅ TX Confirmed!\n${receipt.transactionHash}`);
+    } catch (err) {
+      console.error("❌ Test TX failed:", err);
+      alert("❌ TX failed. Check console for details.");
+    }
+  });
+}
   // ✅ useEffect düzgün kapanıyor
   }, [playerId, playerAddress, displayName]);
 
 
 return (
   <>
+  <button id="test-tx-btn" className="control-btn">🧪 Test Onchain TX</button>
     <div className="game-container" id="game-container">
       <h1>Solitaire</h1>
       <div className="score-display">Score: 0</div>
