@@ -4,7 +4,8 @@ import abi from "../abi/SolitaireCheckin.json";
 
 export const CHECKIN_ABI = abi;
 // 🔐 Checksum denetimini bypass etmek için tamamen lowercase yaz
-export const CHECKIN_CONTRACT = process.env.NEXT_PUBLIC_CHECKIN_CONTRACT!;
+export const CHECKIN_CONTRACT =
+  process.env.NEXT_PUBLIC_CHECKIN_CONTRACT || "0x923baC76DA1b586A78BC5454E753Cd99Ee872cD7";
 
 const BASE_CHAIN_ID_HEX = "0x2105"; // 8453
 
