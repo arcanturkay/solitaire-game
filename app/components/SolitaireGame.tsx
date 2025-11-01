@@ -524,7 +524,6 @@ if (testTxBtn) {
 
 return (
   <>
-  <button id="test-tx-btn" className="control-btn">🧪 Test Onchain TX</button>
     <div className="game-container" id="game-container">
       <h1>Solitaire</h1>
       <div className="score-display">Score: 0</div>
@@ -572,6 +571,7 @@ return (
       {/* 🔁 Controls */}
       <div className="controls">
         <button className="new-game-btn">♻️ New Game</button>
+        <button id="test-tx-btn" className="control-btn">🧪 Test Onchain TX</button>
       </div>
     </div>
 
