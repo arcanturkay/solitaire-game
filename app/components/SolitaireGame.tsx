@@ -1,7 +1,7 @@
 'use client';
 import { useEffect } from 'react';
 import '../../styles/solitaire.css';
-
+import { getUserContract } from "@/app/lib/contract";
 interface Card {
   suit: string; rank: string; color: 'red' | 'black'; value: number; isFaceUp: boolean;
 }
@@ -282,54 +282,66 @@ function selectOrMoveCard(card: HTMLElement) {
   }
 }
 
+
+async function sendWinOnChainAndKV(playerAddr: string, displayName: string, score: number) {
+  const confirmDiv = document.getElementById("onchain-confirm");
+  const setStatus = (txt: string, ok = false) => {
+    if (confirmDiv) {
+      confirmDiv.textContent = txt;
+      confirmDiv.classList.toggle("confirmed", ok);
+    }
+  };
+
+  try {
+    setStatus("⌛ Waiting for wallet...");
+    const { contract, provider } = await getUserContract();
+    const tx = await contract.recordWinFor(playerAddr, score);
+    setStatus("⌛ Sending transaction...");
+    const rc = await provider.waitForTransaction(tx.hash);
+    if (rc?.status === 1) {
+      setStatus("✅ On-chain confirmed", true);
+      // 🎯 KV güncelle
+      await fetch("/api/recordwin", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ playerAddress: playerAddr, score, displayName }),
+      });
+    } else {
+      setStatus("⚠️ Tx failed");
+    }
+  } catch (err) {
+    console.error("user-signed tx error:", err);
+    setStatus("⚠️ Transaction rejected or failed");
+  }
+}
+
 function checkWinCondition() {
   let total = 0;
   foundationPiles.forEach(p => {
-    total += (p as HTMLElement).querySelectorAll('.card').length;
+    total += (p as HTMLElement).querySelectorAll(".card").length;
   });
 
-if (total === 52 && !hasWon) {
-  hasWon = true;
+  if (total === 52 && !hasWon) {
+    hasWon = true;
+    saveScoreIfWin(currentPlayerId, score);
 
-  // ✅ Oyuncunun mevcut skorunu kaydet (ekstra puan ekleme)
-  saveScoreIfWin(currentPlayerId, score);
+    if (winningPlayerNameDisplay)
+      winningPlayerNameDisplay.textContent = `${displayName || currentPlayerId} (${score} pts)`;
 
-  // ✅ Modalda gerçek skor göster
-  if (winningPlayerNameDisplay)
-    winningPlayerNameDisplay.textContent = `${displayName || currentPlayerId} (${score} pts)`;
+    winModal.classList.add("show");
 
-  winModal.classList.add('show');
-
-    // 🟡 Başta pending durumu göster
-    const confirmDiv = document.getElementById('onchain-confirm');
+    const confirmDiv = document.getElementById("onchain-confirm");
     if (confirmDiv) {
-      confirmDiv.textContent = '⌛ Pending on-chain confirmation...';
-      confirmDiv.classList.remove('confirmed');
+      confirmDiv.textContent = "⌛ Pending on-chain confirmation...";
+      confirmDiv.classList.remove("confirmed");
     }
 
-    // 🧾 Zincir işlemi başlat
-    fetch('/api/recordwin', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ playerAddress, score, displayName }),
-    })
-      .then(res => res.json())
-      .then(data => {
-        if (data.ok && confirmDiv) {
-          if (data.onchainFailed === false || data.txHash) {
-            confirmDiv.textContent = '✅ On-chain submitted';
-            confirmDiv.classList.add('confirmed');
-          } else {
-            confirmDiv.textContent = '⌛ Tx pending on-chain (will confirm soon)';
-          }
-        } else if (confirmDiv) {
-          confirmDiv.textContent = '⚠️ On-chain failed';
-        }
-      })
-      .catch(() => {
-        if (confirmDiv)
-          confirmDiv.textContent = '⚠️ On-chain error (check console)';
-      });
+    // 🔹 zincir işlemini başlat
+    if (playerAddress && score > 0) {
+      sendWinOnChainAndKV(playerAddress, displayName || "", score);
+    } else if (confirmDiv) {
+      confirmDiv.textContent = "⚠️ Missing wallet address";
+    }
   }
 }
 

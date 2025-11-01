@@ -1,26 +1,25 @@
 // app/lib/contract.ts
 import { ethers } from "ethers";
-import abi from "../abi/SolitaireCheckin.json"; // ✅ abi dosyan burada olmalı (app/abi/... altında)
+import abi from "../abi/SolitaireCheckin.json";
 
-// ✅ Base Mainnet RPC ve sponsor wallet bilgileri .env.local’da tutulur
-const rpcUrl = process.env.BASE_RPC!;
-const privateKey = process.env.PRIVATE_KEY!;
-
-// 🔹 Sağlam provider + signer
-export const provider = new ethers.JsonRpcProvider(rpcUrl);
-export const signer = new ethers.Wallet(privateKey, provider);
-
-// 🔹 Kontrat bilgileri
-export const CHECKIN_CONTRACT = "0x2412e539F5773Feb1F6f9BB7d1415F06b25d2AB6";
+// ✅ Base Mainnet adresi (herkes için sabit)
+export const CHECKIN_CONTRACT = "0xF4dD331d4B34CB37264F20ac6F16b03ec3e4B911";
 export const CHECKIN_ABI = abi;
 
-// 🔹 Reusable contract instance
-export const contract = new ethers.Contract(CHECKIN_CONTRACT, abi, signer);
+// ✅ Helper: client tarafında provider/signer oluştur
+export async function getUserContract() {
+  // Farcaster MiniApp veya Metamask provider al
+  const eth =
+    (window as any).ethereum ||
+    (await import("@farcaster/miniapp-sdk")
+      .then((sdk) => sdk.default.wallet.getEthereumProvider())
+      .catch(() => null));
 
-// ✅ Helper: direkt bir fonksiyonla kontrat çağrısı örneği
-export async function recordWinFor(playerAddress: string, points: number) {
-  if (!ethers.isAddress(playerAddress)) throw new Error("Invalid address");
-  const tx = await contract.recordWinFor(playerAddress, points);
-  const receipt = await tx.wait();
-  return receipt.transactionHash;
+  if (!eth) throw new Error("No wallet provider found");
+
+  // BrowserProvider ile signer oluştur
+  const provider = new ethers.BrowserProvider(eth, 8453);
+  const signer = await provider.getSigner();
+  const contract = new ethers.Contract(CHECKIN_CONTRACT, abi, signer);
+  return { provider, signer, contract };
 }

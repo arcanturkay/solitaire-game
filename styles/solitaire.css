@@ -608,3 +608,63 @@ html, body { touch-action: manipulation; }
   color: #2ecc71;
   font-weight: 600;
 }
+/* === 🧩 Modal responsive sabitleme fix === */
+.modal-overlay.show {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0,0,0,0.65);
+  z-index: 3000;
+  position: fixed;
+  inset: 0;
+  padding: 20px; /* kenarlardan taşmayı engelle */
+}
+
+.modal-content {
+  background-color: #f9f9f9;
+  color: #114b27;
+  border-radius: 16px;
+  text-align: center;
+  width: 92%;
+  max-width: 420px;
+  max-height: 80vh;           /* 📏 pencere yüksekliğine göre sınırlama */
+  overflow-y: auto;           /* sadece içerik taşarsa scroll */
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+  padding: 24px 28px;
+  scrollbar-width: thin;
+  scrollbar-color: #ccc transparent;
+}
+
+/* 🪟 Mobilde scroll yerine sığdırma */
+@media (max-width: 600px) {
+  .modal-content {
+    max-height: 82vh;
+    padding: 18px 22px;
+    font-size: 0.95rem;
+  }
+
+  .modal-content table {
+    font-size: 0.85rem;
+  }
+
+  .modal-content button {
+    padding: 10px 18px;
+    font-size: 0.9rem;
+  }
+
+  .modal-content h2, .modal-content h3 {
+    font-size: 1.4rem;
+  }
+}
+
+/* 🧩 Scroll bar görünümünü sadeleştir */
+.modal-content::-webkit-scrollbar {
+  width: 6px;
+}
+.modal-content::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 4px;
+}
+.modal-content::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 0, 0, 0.35);
+}
