@@ -1,45 +1,63 @@
 // app/lib/contract.ts
 import { ethers } from "ethers";
-import abi from "../abi/SolitaireCheckin.json";
+import ABI from "../abi/SolitaireCheckin.json";
+export const CHECKIN_ABI = ABI
 
-export const CHECKIN_ABI = abi;
-// 🔐 Checksum denetimini bypass etmek için tamamen lowercase yaz
-export const CHECKIN_CONTRACT = "0xf4dd331d4b34cb37264f20ac6f16b03ec3e4b911";
+// ✅ .env / Vercel
+export const CHECKIN_CONTRACT =
+  process.env.NEXT_PUBLIC_CHECKIN_CONTRACT ??
+  "0xe0ac155B24141D277ad0017169c94530d7a166c5";
 
-const BASE_CHAIN_ID_HEX = "0x2105"; // 8453
+// Base chain params (8453)
+const BASE_PARAMS = {
+  chainId: "0x2105", // 8453
+  chainName: "Base",
+  nativeCurrency: { name: "ETH", symbol: "ETH", decimals: 18 },
+  rpcUrls: ["https://mainnet.base.org"],
+  blockExplorerUrls: ["https://basescan.org"]
+};
 
 export async function getUserContract() {
-  // 1) Farcaster miniapp provider'ı dene; yoksa window.ethereum
-  let eth: any = null;
-  try {
-    const sdk = (await import("@farcaster/miniapp-sdk")).default;
-    eth = await sdk.wallet.getEthereumProvider();
-  } catch (_) { /* yoksa sessiz geç */ }
+  // 1) Provider al (Metamask -> Farcaster MiniApp fallback)
+  let eth: any =
+    (globalThis as any).ethereum ??
+    (await import("@farcaster/miniapp-sdk")
+      .then((sdk) => sdk.default.wallet.getEthereumProvider())
+      .catch(() => null));
 
-  if (!eth && (window as any).ethereum) eth = (window as any).ethereum;
   if (!eth) throw new Error("No wallet provider found");
 
-  const provider = new ethers.BrowserProvider(eth);
+  // 2) Hesap iste
+  await eth.request?.({ method: "eth_requestAccounts" });
 
-  // 2) Ağı Base'e zorla (gerekirse addChain)
+  // 3) Ağ kontrolü ve gerekirse switch/add
   try {
-    await provider.send("wallet_switchEthereumChain", [{ chainId: BASE_CHAIN_ID_HEX }]);
-  } catch (e: any) {
-    if (e?.code === 4902) {
-      await provider.send("wallet_addEthereumChain", [{
-        chainId: BASE_CHAIN_ID_HEX,
-        chainName: "Base",
-        nativeCurrency: { name: "Ether", symbol: "ETH", decimals: 18 },
-        rpcUrls: ["https://mainnet.base.org"],
-        blockExplorerUrls: ["https://basescan.org"],
-      }]);
-      await provider.send("wallet_switchEthereumChain", [{ chainId: BASE_CHAIN_ID_HEX }]);
+    const cur = await eth.request({ method: "eth_chainId" });
+    if (cur?.toLowerCase() !== BASE_PARAMS.chainId) {
+      try {
+        await eth.request({
+          method: "wallet_switchEthereumChain",
+          params: [{ chainId: BASE_PARAMS.chainId }]
+        });
+      } catch (e: any) {
+        if (e?.code === 4902) {
+          await eth.request({
+            method: "wallet_addEthereumChain",
+            params: [BASE_PARAMS]
+          });
+        } else {
+          throw e;
+        }
+      }
     }
+  } catch (e) {
+    // sessiz geç; bazı cüzdanlar izin vermez
   }
 
+  // 4) BrowserProvider/signer/contract
+  const provider = new ethers.BrowserProvider(eth);
   const signer = await provider.getSigner();
+  const contract = new ethers.Contract(CHECKIN_CONTRACT, ABI as any, signer);
 
-  // 3) Kontratı checksum'a takılmadan oluştur (addr lowercase)
-  const contract = new ethers.Contract(CHECKIN_CONTRACT, CHECKIN_ABI, signer);
   return { provider, signer, contract };
 }

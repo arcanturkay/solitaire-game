@@ -4,7 +4,7 @@ export const runtime = "nodejs";
 import { NextResponse } from "next/server";
 import { ethers } from "ethers";
 import { kv, KV_KEYS } from "@/app/lib/kv";
-import { CHECKIN_ABI, CHECKIN_CONTRACT } from "@/app/lib/contract";
+import { CHECKIN_CONTRACT, CHECKIN_ABI } from "@/app/lib/contract";
 
 type CheckState = { lastDate: string | null; streak: number; totalPoints: number };
 

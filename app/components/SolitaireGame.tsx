@@ -340,59 +340,56 @@ async function checkWinCondition() {
     total += (p as HTMLElement).querySelectorAll('.card').length;
   });
 
-  if (total === 52 && !hasWon) {
-    hasWon = true;
-    saveScoreIfWin(currentPlayerId, score);
+  if (total !== 52 || hasWon) return;
 
-    if (winningPlayerNameDisplay)
-      winningPlayerNameDisplay.textContent = `${displayName || currentPlayerId} (${score} pts)`;
+  hasWon = true;
+  saveScoreIfWin(currentPlayerId, score);
 
-    winModal.classList.add('show');
+  if (winningPlayerNameDisplay)
+    winningPlayerNameDisplay.textContent = `${displayName || currentPlayerId} (${score} pts)`;
 
-    const confirmDiv = document.getElementById('onchain-confirm');
+  winModal.classList.add('show');
+
+  const confirmDiv = document.getElementById('onchain-confirm');
+  if (confirmDiv) {
+    confirmDiv.textContent = '⌛ Waiting for wallet confirmation...';
+    confirmDiv.classList.remove('confirmed');
+  }
+
+  try {
+    const { contract, signer } = await getUserContract();
+
+    // (opsiyonel) playerAddress doğrula, yoksa signer adresini kullan
+    let toAddr: string | null = null;
+    if (playerAddress) {
+      try { toAddr = ethers.getAddress(playerAddress); } catch { toAddr = null; }
+    }
+    if (!toAddr) toAddr = await signer.getAddress();
+
+    // 🧾 TX: kullanıcı gazıyla
+    const tx = await contract.recordMyWin(score);
+    if (confirmDiv) confirmDiv.textContent = '⏳ Submitted... waiting for confirmation';
+
+    const receipt = await tx.wait();
+
     if (confirmDiv) {
-      confirmDiv.textContent = '⌛ Waiting for user confirmation...';
-      confirmDiv.classList.remove('confirmed');
+      const url = `https://basescan.org/tx/${receipt.hash}`;
+      confirmDiv.innerHTML = `✅ On-chain confirmed<br><a href="${url}" target="_blank" rel="noreferrer">View on Basescan</a>`;
+      confirmDiv.classList.add('confirmed');
     }
 
- try {
-  // 🎯 signer ve contract birlikte al
-  const { contract, signer } = await getUserContract();
-
-  // 🧩 playerAddress geçerli değilse signer'dan al
-  let toAddr: string;
-  try {
-    toAddr = ethers.getAddress(playerAddress); // checksum geçerli
-  } catch {
-    toAddr = await signer.getAddress(); // signer fallback
-  }
-
-  const tx = await contract.recordMyWin(score);
-  if (confirmDiv) confirmDiv.textContent = '⏳ Submitted... waiting for confirmation';
-
-  const receipt = await tx.wait();
-  console.log('✅ Tx confirmed:', receipt.transactionHash);
-
-if (confirmDiv) {
-  const txUrl = `https://basescan.org/tx/${receipt.transactionHash}`;
-  confirmDiv.innerHTML = `✅ On-chain confirmed<br><a href="${txUrl}" target="_blank">View on Basescan</a>`;
-  confirmDiv.classList.add('confirmed');
-}
-
-  await fetch('/api/recordwin', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ playerAddress: toAddr, score, displayName }),
-  });
-
-} catch (err: any) {
-  console.error('⚠️ recordWinFor failed:', err);
-  if (confirmDiv)
-    confirmDiv.textContent = '⚠️ Transaction rejected or failed';
-}
+    // (opsiyonel) KV/scoreboard’a bildirim
+    fetch('/api/recordwin', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ playerAddress: toAddr, score, displayName }),
+    }).catch(()=>{});
+  } catch (err) {
+    console.error('⚠️ recordMyWin failed:', err);
+    if (confirmDiv)
+      confirmDiv.textContent = '⚠️ Transaction rejected or failed';
   }
 }
-
 
 function resetGame() {
   cardIdCounter = 0;
@@ -601,6 +598,7 @@ return (
       {/* 🔁 Controls */}
       <div className="controls">
         <button className="new-game-btn">♻️ New Game</button>
+         <button id="test-tx-btn" className="control-btn">🧪 Test Onchain TX</button>
       </div>
     </div>
 
