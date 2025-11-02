@@ -171,46 +171,58 @@ function validateMove(cardsToMove: HTMLElement[], destPile: HTMLElement) {
   const topCardToMove = cardsToMove[0];
   if (destPile === topCardToMove.parentElement) return false;
 
-  if (destPile.classList.contains('foundation')) {
+  // 🎯 FOUNDATION kuralı
+  if (destPile.classList.contains("foundation")) {
     if (cardsToMove.length > 1) return false;
     const top = destPile.lastElementChild as HTMLElement | null;
-    if (!top || top.classList.contains('pile-placeholder'))
-      return topCardToMove.dataset.value === '1';
+    if (!top || top.classList.contains("pile-placeholder"))
+      return topCardToMove.dataset.value === "1"; // Ace
     return (
       top.dataset.suit === topCardToMove.dataset.suit &&
-      parseInt(top.dataset.value!) + 1 === parseInt(topCardToMove.dataset.value!)
+      parseInt(top.dataset.value!) + 1 ===
+        parseInt(topCardToMove.dataset.value!)
     );
   }
 
-  if (destPile.classList.contains('tableau')) {
+  // 🎯 TABLEAU kuralı
+  if (destPile.classList.contains("tableau")) {
     const top = destPile.lastElementChild as HTMLElement | null;
-    if (!top || top.classList.contains('pile-placeholder'))
-      return topCardToMove.dataset.rank === 'K';
-
-    // ✅ renk farkı ve değer farkı kontrolü
+    // 📦 Boş tabloya sadece King gelebilir
+    if (!top || top.classList.contains("pile-placeholder"))
+      return topCardToMove.dataset.rank === "K";
+    // 📦 Farklı renk ve 1 düşük değer
     return (
       top.dataset.color !== topCardToMove.dataset.color &&
-      parseInt(top.dataset.value!) === parseInt(topCardToMove.dataset.value!) + 1
+      parseInt(top.dataset.value!) ===
+        parseInt(topCardToMove.dataset.value!) + 1
     );
   }
 
   return false;
 }
 
-    function moveCards(cards: HTMLElement[], fromPile: HTMLElement, toPile: HTMLElement) {
-      if (!validateMove(cards, toPile)) return; // 🚫 geçersiz taşıma
-      cards.forEach((c)=>toPile.appendChild(c));
-      if (toPile.classList.contains('foundation')) updateScore(10);
-      else if (fromPile.id==='waste' && toPile.classList.contains('tableau')) updateScore(5);
-      else if (fromPile.classList.contains('foundation') && toPile.classList.contains('tableau')) updateScore(-15);
+function moveCards(cards: HTMLElement[], fromPile: HTMLElement, toPile: HTMLElement) {
+  cards.forEach(c => toPile.appendChild(c));
 
-      if (fromPile.classList.contains('tableau') && fromPile.children.length>0) {
-        const top = fromPile.lastElementChild as HTMLElement;
-        if (top.classList.contains('face-down')) { top.classList.remove('face-down'); top.draggable = true; updateScore(5); }
-      }
-      checkWinCondition();
-      autoFinishIfAllOpen();
+  if (toPile.classList.contains("foundation")) updateScore(10);
+  else if (fromPile.id === "waste" && toPile.classList.contains("tableau"))
+    updateScore(5);
+  else if (fromPile.classList.contains("foundation") && toPile.classList.contains("tableau"))
+    updateScore(-15);
+
+  // 📦 Kaynak destesi aç
+  if (fromPile.classList.contains("tableau") && fromPile.children.length > 0) {
+    const top = fromPile.lastElementChild as HTMLElement;
+    if (top.classList.contains("face-down")) {
+      top.classList.remove("face-down");
+      top.draggable = true;
+      updateScore(5);
     }
+  }
+
+  checkWinCondition();
+  autoFinishIfAllOpen();
+}
 
     function onDragStart(e: DragEvent) {
       const card = e.target as HTMLElement;
@@ -242,33 +254,34 @@ function validateMove(cardsToMove: HTMLElement[], destPile: HTMLElement) {
 function selectOrMoveCard(card: HTMLElement) {
   if (card.classList.contains("face-down")) return;
 
-  // 🎯 1. Seçim: kartı seç
+  // 🎯 1️⃣ İlk seçim
   if (!selectedCard) {
     selectedCard = card;
     card.classList.add("selected");
     return;
   }
 
-  // 🎯 2. Aynı karta tekrar dokunulduysa: seçimi kaldır
+  // 🎯 2️⃣ Aynı karta tekrar dokunduysa: seçimi kaldır
   if (selectedCard === card) {
     card.classList.remove("selected");
     selectedCard = null;
     return;
   }
 
-  // 🎯 3. Hedef sütunu tespit et
+  // 🎯 3️⃣ Hedef sütun belirleme
   let destPile: HTMLElement | null = null;
 
+  // 📦 Kart üzerine dokunulursa: o kartın bulunduğu "pile" hedef olur
   if (card.classList.contains("card")) {
     destPile = card.closest(".pile") as HTMLElement | null;
   }
 
-  // 📦 Boş sütun (placeholder) dokunması
+  // 📦 Eğer dokunulan şey bir "boş sütun" placeholder'ıysa
   if (!destPile && card.classList.contains("pile-placeholder")) {
     destPile = card.parentElement as HTMLElement;
   }
 
-  // 🧩 Eğer foundation'a otomatik taşıma uygunsa (örneğin As)
+  // 🧩 Eğer hâlâ hedef bulunamadıysa ve kart “A” veya foundation’a uygun bir kartsa
   if (!destPile) {
     const v = parseInt(selectedCard.dataset.value!);
     for (const f of Array.from(foundationPiles) as HTMLElement[]) {
@@ -288,7 +301,7 @@ function selectOrMoveCard(card: HTMLElement) {
     }
   }
 
-  // 🚫 Hedef yoksa sadece seçim değiştir
+  // 🚫 Hedef bulunamadıysa sadece seçim değiştir
   if (!destPile) {
     selectedCard.classList.remove("selected");
     selectedCard = card;
@@ -296,25 +309,16 @@ function selectOrMoveCard(card: HTMLElement) {
     return;
   }
 
-  // 🎯 4. Seçilen kartın altındaki açık kartları da dahil et
+  // 🎯 4️⃣ Seçilen kartın altındaki açık kartları da dahil et
   const fromPile = selectedCard.parentElement as HTMLElement;
   const pileCards = Array.from(fromPile.children) as HTMLElement[];
   const selectedIndex = pileCards.indexOf(selectedCard);
-  let cardsToMove: HTMLElement[] = [selectedCard];
+  const cardsToMove = pileCards.slice(selectedIndex).filter(c => !c.classList.contains("face-down"));
 
-  if (selectedIndex >= 0) {
-    const tail = pileCards.slice(selectedIndex);
-    cardsToMove = tail.filter(c => !c.classList.contains("face-down"));
-  }
+  // ✅ 5️⃣ Boş tabloya taşımak için özel kontrol (sadece “K” başlatabilir)
+  const isEmptyTableau = destPile.classList.contains("tableau") &&
+    (!destPile.lastElementChild || destPile.lastElementChild.classList.contains("pile-placeholder"));
 
-  // ✅ 5. Boş sütuna taşımaya özel kontrol (K kartı ile başlama)
-// ✅ placeholder'ları yok sayarak boş tablo algıla
-const isEmptyTableau =
-  destPile.classList.contains("tableau") &&
-  Array.from(destPile.children).every(
-    (c) => c.classList.contains("pile-placeholder")
-  );
-  
   if (isEmptyTableau && selectedCard.dataset.rank === "K") {
     moveCards(cardsToMove, fromPile, destPile);
     selectedCard.classList.remove("selected");
@@ -322,12 +326,13 @@ const isEmptyTableau =
     return;
   }
 
-  // ✅ 6. Standart taşıma kontrolü
+  // ✅ 6️⃣ Normal geçerli hamle kontrolü
   if (validateMove(cardsToMove, destPile)) {
     moveCards(cardsToMove, fromPile, destPile);
     selectedCard.classList.remove("selected");
     selectedCard = null;
   } else {
+    // Geçersiz hamlede seçimi değiştir
     selectedCard.classList.remove("selected");
     selectedCard = card;
     card.classList.add("selected");
@@ -598,7 +603,7 @@ return (
       {/* 🔁 Controls */}
       <div className="controls">
         <button className="new-game-btn">♻️ New Game</button>
-         <button id="test-tx-btn" className="control-btn">🧪 Test Onchain TX</button>
+        <button id="test-tx-btn" className="control-btn">🧪 Test Onchain TX</button>
       </div>
     </div>
 
