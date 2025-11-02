@@ -121,59 +121,84 @@ export default function SolitaireGame({
       if (ph) ph.style.display = 'none';
     }
     // 🎯 Tüm kartlar açıldığında otomatik foundation'a taşıma
-    function autoFinishIfAllOpen() {
-      const hidden = document.querySelectorAll('.card.face-down');
-      if (hidden.length === 0 && !hasWon) {
-        console.log("✨ All cards face-up → auto-finishing...");
-        let moved = true;
-        while (moved) {
-          moved = false;
-          const allTableau = Array.from(tableauPiles) as HTMLElement[];
-          for (const pile of allTableau) {
-            const top = pile.lastElementChild as HTMLElement | null;
-            if (!top || top.classList.contains('face-down')) continue;
+  function autoFinishIfAllOpen() {
+  const hidden = document.querySelectorAll('.card.face-down');
+  if (hidden.length === 0 && !hasWon) {
+    console.log("✨ All cards face-up → auto-finishing...");
 
-            const v = parseInt(top.dataset.value!);
-            for (const f of Array.from(foundationPiles) as HTMLElement[]) {
-              const fTop = f.lastElementChild as HTMLElement | null;
-              if (!fTop || fTop.classList.contains('pile-placeholder')) {
-                if (top.dataset.rank === 'A' || v === 1) {
-                  moveCards([top], pile, f);
-                  moved = true;
-                  break;
-                }
-              } else if (fTop.dataset.suit === top.dataset.suit &&
-                  parseInt(fTop.dataset.value!) + 1 === v) {
-                moveCards([top], pile, f);
-                moved = true;
-                break;
-              }
+    let moved = true;
+    let safety = 0;
+
+    // 🔁 100 hamle limitli güvenli döngü
+    while (moved && safety++ < 100) {
+      moved = false;
+
+      const allTableau = Array.from(tableauPiles) as HTMLElement[];
+      for (const pile of allTableau) {
+        const top = pile.lastElementChild as HTMLElement | null;
+        if (!top || top.classList.contains('face-down')) continue;
+
+        const v = parseInt(top.dataset.value!);
+        for (const f of Array.from(foundationPiles) as HTMLElement[]) {
+          const fTop = f.lastElementChild as HTMLElement | null;
+
+          // 🅰️ As taşı ya da boş foundation
+          if (!fTop || fTop.classList.contains('pile-placeholder')) {
+            if (top.dataset.rank === 'A' || v === 1) {
+              moveCards([top], pile, f);
+              moved = true;
+              break;
             }
           }
+          // 🔢 Aynı suit, bir üst değer
+          else if (
+            fTop.dataset.suit === top.dataset.suit &&
+            parseInt(fTop.dataset.value!) + 1 === v
+          ) {
+            moveCards([top], pile, f);
+            moved = true;
+            break;
+          }
         }
-        console.log("🏁 Auto-finish complete!");
       }
-    }
-    function validateMove(cardsToMove: HTMLElement[], destPile: HTMLElement) {
-      const topCardToMove = cardsToMove[0];
-      if (destPile === topCardToMove.parentElement) return false;
-      if (destPile.classList.contains('foundation')) {
-        if (cardsToMove.length>1) return false;
-        const top = destPile.lastElementChild as HTMLElement|null;
-        if (!top || top.classList.contains('pile-placeholder')) return topCardToMove.dataset.value === '1';
-        return (top.dataset.suit===topCardToMove.dataset.suit &&
-               parseInt(top.dataset.value!) + 1 === parseInt(topCardToMove.dataset.value!));
-      }
-      if (destPile.classList.contains('tableau')) {
-        const top = destPile.lastElementChild as HTMLElement|null;
-        if (!top) return topCardToMove.dataset.rank === 'K';
-        return (top.dataset.color !== topCardToMove.dataset.color &&
-               parseInt(top.dataset.value!) === parseInt(topCardToMove.dataset.value!) + 1);
-      }
-      return false;
     }
 
+    console.log("🏁 Auto-finish complete!");
+  }
+}
+
+function validateMove(cardsToMove: HTMLElement[], destPile: HTMLElement) {
+  const topCardToMove = cardsToMove[0];
+  if (destPile === topCardToMove.parentElement) return false;
+
+  if (destPile.classList.contains('foundation')) {
+    if (cardsToMove.length > 1) return false;
+    const top = destPile.lastElementChild as HTMLElement | null;
+    if (!top || top.classList.contains('pile-placeholder'))
+      return topCardToMove.dataset.value === '1';
+    return (
+      top.dataset.suit === topCardToMove.dataset.suit &&
+      parseInt(top.dataset.value!) + 1 === parseInt(topCardToMove.dataset.value!)
+    );
+  }
+
+  if (destPile.classList.contains('tableau')) {
+    const top = destPile.lastElementChild as HTMLElement | null;
+    if (!top || top.classList.contains('pile-placeholder'))
+      return topCardToMove.dataset.rank === 'K';
+
+    // ✅ renk farkı ve değer farkı kontrolü
+    return (
+      top.dataset.color !== topCardToMove.dataset.color &&
+      parseInt(top.dataset.value!) === parseInt(topCardToMove.dataset.value!) + 1
+    );
+  }
+
+  return false;
+}
+
     function moveCards(cards: HTMLElement[], fromPile: HTMLElement, toPile: HTMLElement) {
+      if (!validateMove(cards, toPile)) return; // 🚫 geçersiz taşıma
       cards.forEach((c)=>toPile.appendChild(c));
       if (toPile.classList.contains('foundation')) updateScore(10);
       else if (fromPile.id==='waste' && toPile.classList.contains('tableau')) updateScore(5);
@@ -283,9 +308,13 @@ function selectOrMoveCard(card: HTMLElement) {
   }
 
   // ✅ 5. Boş sütuna taşımaya özel kontrol (K kartı ile başlama)
-  const isEmptyTableau = destPile.classList.contains("tableau") &&
-    destPile.children.length === 0;
-
+// ✅ placeholder'ları yok sayarak boş tablo algıla
+const isEmptyTableau =
+  destPile.classList.contains("tableau") &&
+  Array.from(destPile.children).every(
+    (c) => c.classList.contains("pile-placeholder")
+  );
+  
   if (isEmptyTableau && selectedCard.dataset.rank === "K") {
     moveCards(cardsToMove, fromPile, destPile);
     selectedCard.classList.remove("selected");
