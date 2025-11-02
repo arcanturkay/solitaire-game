@@ -1,58 +1,30 @@
 [
   {
     "inputs": [
-      { "internalType": "uint256", "name": "addPoints", "type": "uint256" }
-    ],
-    "name": "checkIn",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [
+      { "internalType": "address", "name": "player", "type": "address" },
       { "internalType": "uint256", "name": "score", "type": "uint256" }
     ],
-    "name": "recordMyWin",
+    "name": "recordWinFor",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
   },
   {
-    "inputs": [],
-    "name": "getMyStats",
-    "outputs": [
-      {
-        "components": [
-          { "internalType": "uint256", "name": "totalPoints", "type": "uint256" },
-          { "internalType": "uint256", "name": "streak", "type": "uint256" },
-          { "internalType": "uint256", "name": "lastCheckinDay", "type": "uint256" }
-        ],
-        "internalType": "struct SolitaireCheckin.Player",
-        "name": "",
-        "type": "tuple"
-      }
+    "inputs": [
+      { "internalType": "address", "name": "player", "type": "address" },
+      { "internalType": "uint256", "name": "points", "type": "uint256" }
     ],
-    "stateMutability": "view",
+    "name": "checkInFor",
+    "outputs": [],
+    "stateMutability": "nonpayable",
     "type": "function"
   },
   {
-    "inputs": [
-      { "internalType": "address", "name": "a", "type": "address" }
-    ],
-    "name": "getPlayer",
-    "outputs": [
-      {
-        "components": [
-          { "internalType": "uint256", "name": "totalPoints", "type": "uint256" },
-          { "internalType": "uint256", "name": "streak", "type": "uint256" },
-          { "internalType": "uint256", "name": "lastCheckinDay", "type": "uint256" }
-        ],
-        "internalType": "struct SolitaireCheckin.Player",
-        "name": "",
-        "type": "tuple"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
+  "inputs": [],
+  "name": "owner",
+  "outputs": [{ "internalType": "address", "name": "", "type": "address" }],
+  "stateMutability": "view",
+  "type": "function"
   }
+
 ]
