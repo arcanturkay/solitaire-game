@@ -514,15 +514,11 @@ export default function SolitaireGame({
     // --- TOUCH BINDER ---
     function attachTouchHandlers() {
       // placeholder’lara tık/touch
-      document.querySelectorAll(".pile").forEach((p) => {
-        if ((p as any)._touchBound) return;
-        (p as any)._touchBound = true;
-        p.addEventListener("touchend", (e) => {
-          const target = e.target as HTMLElement;
-          if (target.classList.contains("pile-placeholder") || p.children.length === 0) {
-            selectOrMoveCard(p.querySelector(".pile-placeholder") as HTMLElement);
-          }
-        });
+      document.querySelectorAll('.pile-placeholder').forEach((ph) => {
+        if ((ph as any)._bound) return;
+        (ph as any)._bound = true;
+        ph.addEventListener('touchend', () => selectOrMoveCard(ph as HTMLElement));
+        ph.addEventListener('click', () => selectOrMoveCard(ph as HTMLElement));
       });
 
       // kartlara tık/touch
