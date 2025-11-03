@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.20;
+pragma solidity ^0.8.24;
 
 contract SolitaireCheckin {
     struct Player {
@@ -31,22 +31,11 @@ contract SolitaireCheckin {
     }
 
     // ----------------------------------------------------------
-    // 🔹 Yönetim
+    // 🔹 Yönetim (Admin)
     // ----------------------------------------------------------
     function setOperator(address op, bool enabled) external onlyOwner {
         operators[op] = enabled;
         emit OperatorUpdated(op, enabled);
-    }
-
-    // ----------------------------------------------------------
-    // 🔹 Admin/Operator fonksiyonları
-    // ----------------------------------------------------------
-    function checkInFor(address player, uint256 addPoints) external onlyOwnerOrOperator {
-        _checkIn(player, addPoints);
-    }
-
-    function recordWinFor(address player, uint256 score) external onlyOwnerOrOperator {
-        _recordWin(player, score);
     }
 
     // ----------------------------------------------------------
@@ -58,6 +47,17 @@ contract SolitaireCheckin {
 
     function recordMyWin(uint256 score) external {
         _recordWin(msg.sender, score);
+    }
+
+    // ----------------------------------------------------------
+    // 🔹 Admin/Operator fonksiyonları
+    // ----------------------------------------------------------
+    function checkInFor(address player, uint256 addPoints) external onlyOwnerOrOperator {
+        _checkIn(player, addPoints);
+    }
+
+    function recordWinFor(address player, uint256 score) external onlyOwnerOrOperator {
+        _recordWin(player, score);
     }
 
     // ----------------------------------------------------------
@@ -87,7 +87,7 @@ contract SolitaireCheckin {
     }
 
     // ----------------------------------------------------------
-    // 🔹 View yardımcıları
+    // 🔹 Görüntüleme yardımcıları
     // ----------------------------------------------------------
     function getPlayer(address a) external view returns (Player memory) {
         return players[a];

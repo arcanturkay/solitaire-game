@@ -6,7 +6,7 @@ export const CHECKIN_ABI = ABI
 // ✅ .env / Vercel
 export const CHECKIN_CONTRACT =
   process.env.NEXT_PUBLIC_CHECKIN_CONTRACT ??
-  "0xe0ac155B24141D277ad0017169c94530d7a166c5";
+  "0xA7D83c24D78C66fdddd2a7Be1Ec1337886D0c461";
 
 // Base chain params (8453)
 const BASE_PARAMS = {

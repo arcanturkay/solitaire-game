@@ -8,6 +8,7 @@ export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
     const limit = Number(searchParams.get("limit") || 20);
 
+    // 🧮 KV'den en yüksek skorları al
     const raw = await kv.zrange(KV_KEYS.SCORE_ZSET, 0, limit - 1, {
       rev: true,
       withScores: true,
@@ -25,6 +26,7 @@ export async function GET(request: Request) {
       }
     }
 
+    // 🧩 Kullanıcı adlarını profilden getir
     const result = await Promise.all(
       pairs.map(async ([addr, score]) => {
         const name =
@@ -33,14 +35,18 @@ export async function GET(request: Request) {
       })
     );
 
-    return NextResponse.json({ ok: true, items: result }, {
-  headers: {
-    'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
-    'Access-Control-Allow-Origin': '*',
-  },
-});
+    // ✅ Yanıt döndür
+    return NextResponse.json(
+      { ok: true, items: result },
+      {
+        headers: {
+          "Cache-Control": "no-store, no-cache, must-revalidate, proxy-revalidate",
+          "Access-Control-Allow-Origin": "*",
+        },
+      }
+    );
   } catch (e: any) {
-    console.error("score leaderboard error:", e);
+    console.error("💥 leaderboard/score error:", e);
     return NextResponse.json({ ok: false, error: e.message }, { status: 500 });
   }
 }

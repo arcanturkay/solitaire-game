@@ -352,16 +352,18 @@ export default function SolitaireGame({
       }
 
       try {
-        const { contract, signer } = await getUserContract();
-
-        let toAddr: string | null = null;
+        const { contract, signer } = await getUserContract();        
+          let toAddr: string | null = null;
+        
         if (playerAddress) { try { toAddr = ethers.getAddress(playerAddress); } catch { toAddr = null; } }
         if (!toAddr) toAddr = await signer.getAddress();
 
+        // kullanıcı kendi gas'ını ve fee'yi öder
         const tx = await contract.recordMyWin(score);
-        if (confirmDiv) confirmDiv.textContent = '⏳ Submitted... waiting for confirmation';
+        console.log("🎯 Tx sent:", tx.hash);
 
         const receipt = await tx.wait();
+        console.log("✅ Confirmed:", receipt.transactionHash);
 
         if (confirmDiv) {
           const url = `https://basescan.org/tx/${receipt.hash}`;
