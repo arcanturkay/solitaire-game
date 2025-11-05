@@ -577,38 +577,50 @@ export default function SolitaireGame({
     }
 
     // --- RESET ---
-    function resetGame() {
-      cardIdCounter = 0;
-      hasWon = false;
-      setScore(0);
+function resetGame() {
+  cardIdCounter = 0;
+  hasWon = false;
+  setScore(0);
 
-      [stockPile, wastePile, ...foundationPiles].forEach(p => {
-        (p as HTMLElement).innerHTML = '<div class="pile-placeholder"></div>';
-      });
+  // --- STOCK & FOUNDATION temizliği ---
+  [stockPile, wastePile, ...foundationPiles].forEach((p) => {
+    (p as HTMLElement).innerHTML = '<div class="pile-placeholder"></div>';
+  });
 
-        // tableau reset → boşsa tap hedefi olsun
-      (tableauPiles as unknown as HTMLElement[]).forEach((p) => {
-        p.innerHTML = '';
-        ensurePlaceholder(p);
-      });
+  // --- TABLEAU temizliği ---
+  (Array.from(tableauPiles) as HTMLElement[]).forEach((p) => {
+    p.innerHTML = '';
+    ensurePlaceholder(p);
+  });
 
+  // --- MODAL & STATE reset ---
+  winModal.classList.remove('show');
+  draggedCards = [];
+  selectedCard = null;
 
-      winModal.classList.remove('show');
+  // --- DESTEK fonksiyonlar ---
+  createDeck();
+  shuffleDeck();
+  dealCards();
 
-      createDeck();
-      shuffleDeck();
-      dealCards();
-    }
-      // dağıtım sonrası kart konmuş tableau’lardan placeholder’ı kaldır
-      (tableauPiles as unknown as HTMLElement[]).forEach((p) => {
-        if (p.querySelector('.card')) removePlaceholder(p);
-      });
+  // --- dağıtım sonrası placeholder düzeni ---
+  (Array.from(tableauPiles) as HTMLElement[]).forEach((p) => {
+    if (p.querySelector('.card')) removePlaceholder(p);
+    else ensurePlaceholder(p);
+  });
 
-      // stock placeholder gizleme davranışı sendeki gibi kalsın
-      const ph = stockPile.querySelector('.pile-placeholder') as HTMLElement | null;
-      if (ph) ph.style.display = 'none';
+  (Array.from(foundationPiles) as HTMLElement[]).forEach((p) => {
+    if (p.querySelector('.card')) removePlaceholder(p);
+    else ensurePlaceholder(p);
+  });
 
-      gameContainer.classList.add('active');
+  // --- STOCK placeholder gizle ---
+  const stockPlaceholder = stockPile.querySelector('.pile-placeholder') as HTMLElement | null;
+  if (stockPlaceholder) stockPlaceholder.style.display = 'none';
+
+  gameContainer.classList.add('active');
+}
+
     // cleanup (temel)
     return () => {
       // burada isteğe bağlı temizleme yapılabilir
