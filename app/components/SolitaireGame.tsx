@@ -161,23 +161,24 @@ export default function SolitaireGame({
     function moveCards(cards: HTMLElement[], fromPile: HTMLElement, toPile: HTMLElement) {
       // Empty tableau kuralını açık ve net uygula
       const isEmptyTableau =
-          toPile.classList.contains("tableau") &&
-          (toPile.children.length === 0 ||
-              (toPile.children.length === 1 &&
-                  toPile.firstElementChild?.classList.contains("pile-placeholder")));
+        toPile.classList.contains("tableau") &&
+        (!toPile.querySelector('.card'));
 
-      if (isEmptyTableau && cards[0].dataset.rank !== "K") return;
+      removePlaceholder(toPile);
       if (!isEmptyTableau && !validateMove(cards, toPile)) return;
 
       cards.forEach((c)=>toPile.appendChild(c));
 
-      if (toPile.classList.contains('foundation')) updateScore(10);
-      else if (fromPile.id==='waste' && toPile.classList.contains('tableau')) updateScore(5);
-      else if (fromPile.classList.contains('foundation') && toPile.classList.contains('tableau')) updateScore(-15);
-
-      if (fromPile.classList.contains('tableau') && fromPile.children.length>0) {
-        const top = fromPile.lastElementChild as HTMLElement;
-        if (top.classList.contains('face-down')) { top.classList.remove('face-down'); top.draggable = true; updateScore(5); }
+  // kaynak üst kartı aç
+      if (fromPile.classList.contains('tableau')) {
+        const top = fromPile.lastElementChild as HTMLElement | null;
+        if (top && top.classList.contains('face-down')) {
+          top.classList.remove('face-down');
+          top.draggable = true;
+          updateScore(5);
+        }
+        // kaynakta kart kalmadıysa yeniden placeholder ekle → tap hedefi
+        if (!fromPile.querySelector('.card')) ensurePlaceholder(fromPile);
       }
 
       checkWinCondition();
@@ -210,7 +211,28 @@ export default function SolitaireGame({
         }
       }
     }
+    function bindPlaceholder(ph: HTMLElement) {
+      if ((ph as any)._bound) return;
+      (ph as any)._bound = true;
+      ph.addEventListener('touchend', () => selectOrMoveCard(ph));
+      ph.addEventListener('click', () => selectOrMoveCard(ph));
+    }
 
+    function ensurePlaceholder(pile: HTMLElement) {
+      // zaten varsa çık
+      let ph = pile.querySelector('.pile-placeholder') as HTMLElement | null;
+      if (!ph) {
+        ph = document.createElement('div');
+        ph.className = 'pile-placeholder';
+        pile.appendChild(ph);
+      }
+      bindPlaceholder(ph);
+    }
+
+    function removePlaceholder(pile: HTMLElement) {
+      const ph = pile.querySelector('.pile-placeholder');
+      if (ph) ph.remove();
+    }
     function selectOrMoveCard(card: HTMLElement) {
       if (card.classList.contains("face-down")) return;
 
@@ -541,16 +563,30 @@ export default function SolitaireGame({
       [stockPile, wastePile, ...foundationPiles].forEach(p => {
         (p as HTMLElement).innerHTML = '<div class="pile-placeholder"></div>';
       });
-      tableauPiles.forEach(p => ((p as HTMLElement).innerHTML = ''));
+
+        // tableau reset → boşsa tap hedefi olsun
+      (tableauPiles as unknown as HTMLElement[]).forEach((p) => {
+        p.innerHTML = '';
+        ensurePlaceholder(p);
+      });
+
 
       winModal.classList.remove('show');
 
       createDeck();
       shuffleDeck();
       dealCards();
-      gameContainer.classList.add('active');
     }
+      // dağıtım sonrası kart konmuş tableau’lardan placeholder’ı kaldır
+      (tableauPiles as unknown as HTMLElement[]).forEach((p) => {
+        if (p.querySelector('.card')) removePlaceholder(p);
+      });
 
+      // stock placeholder gizleme davranışı sendeki gibi kalsın
+      const ph = stockPile.querySelector('.pile-placeholder') as HTMLElement | null;
+      if (ph) ph.style.display = 'none';
+
+      gameContainer.classList.add('active');
     // cleanup (temel)
     return () => {
       // burada isteğe bağlı temizleme yapılabilir
