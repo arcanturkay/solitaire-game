@@ -376,16 +376,11 @@ export default function SolitaireGame({
         confirmDiv.classList.remove('confirmed');
       }
 
-<<<<<<< HEAD
       try {
-=======
-       try {
->>>>>>> dacf5585ba0117ffc84a877396de4abb3762917e
         let txHash: string | null = null;
         let toAddr: string | null = null;
 
         if (isFarcaster && (window as any).sdk?.wallet) {
-<<<<<<< HEAD
           console.log("📱 Farcaster ortamı algılandı — Farcaster SDK ile TX gönderiliyor...");
 
           // Farcaster provider → ethers signer
@@ -406,75 +401,38 @@ export default function SolitaireGame({
         } else {
           console.log("🌐 Dış cüzdan (MetaMask/Rabby) ile TX gönderiliyor...");
 
-          const {contract, signer} = await getUserContract();
-
-          // Gönderen adresi belirle
-=======
-          // Farcaster MiniApp içinden
-          const provider = await sdk.wallet.getEthereumProvider();
-          const browserProvider = new ethers.BrowserProvider(provider);
-          const signer = await browserProvider.getSigner();
-          const contract = new ethers.Contract(CHECKIN_CONTRACT, CHECKIN_ABI, signer);
-
-          const tx = await contract.recordMyWin(score);
-          const rc = await tx.wait();
-          txHash = (rc as any).hash ?? (rc as any).transactionHash;
-          toAddr = await signer.getAddress();
-        } else {
-          // Dış cüzdan (MetaMask / Rabby)
           const { contract, signer } = await getUserContract();
 
->>>>>>> dacf5585ba0117ffc84a877396de4abb3762917e
+          // Gönderen adresi belirle
           if (playerAddress) {
-            try {
-              toAddr = ethers.getAddress(playerAddress);
-            } catch {
-              toAddr = null;
-            }
+            try { toAddr = ethers.getAddress(playerAddress); } catch { toAddr = null; }
           }
           if (!toAddr) toAddr = await signer.getAddress();
 
           const tx = await contract.recordMyWin(score);
           const rc = await tx.wait();
-<<<<<<< HEAD
 
           txHash = (rc as any).hash ?? (rc as any).transactionHash ?? tx.hash;
           console.log("✅ External TX:", txHash);
         }
 
 // ✅ Ekranda onay göstergesi
-=======
-          txHash = (rc as any).hash ?? (rc as any).transactionHash;
-        }
-
->>>>>>> dacf5585ba0117ffc84a877396de4abb3762917e
         if (confirmDiv && txHash) {
           const url = `https://basescan.org/tx/${txHash}`;
           confirmDiv.innerHTML = `✅ On-chain confirmed<br><a href="${url}" target="_blank" rel="noreferrer">View on Basescan</a>`;
           confirmDiv.classList.add('confirmed');
         }
 
-<<<<<<< HEAD
 // ✅ KV backend’e gönderim (toAddr null değilse)
         if (toAddr) {
           fetch('/api/recordwin', {
             method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({playerAddress: toAddr, score, displayName}),
-          }).catch(() => {
-          });
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ playerAddress: toAddr, score, displayName }),
+          }).catch(() => {});
         }
-      }
+        }
        catch (err) {
-=======
-        // KV’ye yaz (off-chain liderboard)
-        fetch('/api/recordwin', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ playerAddress: toAddr, score, displayName }),
-        }).catch(() => {});
-      } catch (err) {
->>>>>>> dacf5585ba0117ffc84a877396de4abb3762917e
         console.error('⚠️ recordMyWin failed:', err);
         const div = document.getElementById('onchain-confirm');
         if (div) div.textContent = '⚠️ Transaction rejected or failed';
@@ -595,17 +553,44 @@ export default function SolitaireGame({
     updatePlayerStatus();
 
     // Test TX (tek bağlanma)
+// 🧪 Test TX (tek bağlanma & kullanıcı dostu)
     if (testTxBtn && !(testTxBtn as any)._bound) {
       (testTxBtn as any)._bound = true;
       testTxBtn.addEventListener('click', async () => {
         try {
-          const { contract } = await getUserContract();
+          // UI feedback
+          const btn = testTxBtn as HTMLButtonElement;
+          btn.textContent = "⏳ Sending TX...";
+          btn.disabled = true;
+
+          // 1️⃣ Cüzdan bağlantısı al
+          const { contract, signer } = await getUserContract();
+          const userAddr = await signer.getAddress();
+          console.log(`👤 Connected wallet: ${userAddr}`);
+
+          // 2️⃣ Basit TX gönder
           const tx = await contract.recordMyWin(123);
-          const receipt = await tx.wait();
-          alert(`✅ TX Confirmed!\n${receipt.transactionHash}`);
-        } catch (err) {
+          console.log("📤 TX sent:", tx.hash);
+
+          // 3️⃣ Onay bekle
+          const rc = await tx.wait();
+          console.log("✅ TX mined:", rc.transactionHash);
+
+          // 4️⃣ UI güncelle
+          alert(`✅ On-chain success!\nWallet: ${userAddr}\nTX: ${rc.transactionHash}`);
+          btn.textContent = "🧪 Test TX (Success)";
+          btn.classList.add("confirmed");
+        } catch (err: any) {
           console.error("❌ Test TX failed:", err);
-          alert("❌ TX failed. Check console for details.");
+          alert(`❌ TX failed\nReason: ${err?.message || err}`);
+          testTxBtn.textContent = "❌ Test TX Failed";
+        } finally {
+          // Reset after short delay
+          setTimeout(() => {
+            testTxBtn.textContent = "🧪 Test Onchain TX";
+            testTxBtn.removeAttribute("disabled");
+            testTxBtn.classList.remove("confirmed");
+          }, 4000);
         }
       });
     }
@@ -630,12 +615,11 @@ export default function SolitaireGame({
     }
 
     // --- RESET ---
-function resetGame() {
-  cardIdCounter = 0;
-  hasWon = false;
-  setScore(0);
+    function resetGame() {
+      cardIdCounter = 0;
+      hasWon = false;
+      setScore(0);
 
-<<<<<<< HEAD
       // --- STOCK & FOUNDATION temizliği ---
       [stockPile, wastePile, ...foundationPiles].forEach((p) => {
         (p as HTMLElement).innerHTML = '<div class="pile-placeholder"></div>';
@@ -675,47 +659,6 @@ function resetGame() {
       gameContainer.classList.add('active');
     }
 
-=======
-  // --- STOCK & FOUNDATION temizliği ---
-  [stockPile, wastePile, ...foundationPiles].forEach((p) => {
-    (p as HTMLElement).innerHTML = '<div class="pile-placeholder"></div>';
-  });
-
-  // --- TABLEAU temizliği ---
-  (Array.from(tableauPiles) as HTMLElement[]).forEach((p) => {
-    p.innerHTML = '';
-    ensurePlaceholder(p);
-  });
-
-  // --- MODAL & STATE reset ---
-  winModal.classList.remove('show');
-  draggedCards = [];
-  selectedCard = null;
-
-  // --- DESTEK fonksiyonlar ---
-  createDeck();
-  shuffleDeck();
-  dealCards();
-
-  // --- dağıtım sonrası placeholder düzeni ---
-  (Array.from(tableauPiles) as HTMLElement[]).forEach((p) => {
-    if (p.querySelector('.card')) removePlaceholder(p);
-    else ensurePlaceholder(p);
-  });
-
-  (Array.from(foundationPiles) as HTMLElement[]).forEach((p) => {
-    if (p.querySelector('.card')) removePlaceholder(p);
-    else ensurePlaceholder(p);
-  });
-
-  // --- STOCK placeholder gizle ---
-  const stockPlaceholder = stockPile.querySelector('.pile-placeholder') as HTMLElement | null;
-  if (stockPlaceholder) stockPlaceholder.style.display = 'none';
-
-  gameContainer.classList.add('active');
-}
-
->>>>>>> dacf5585ba0117ffc84a877396de4abb3762917e
     // cleanup (temel)
     return () => {
       // burada isteğe bağlı temizleme yapılabilir
