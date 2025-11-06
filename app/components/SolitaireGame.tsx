@@ -551,53 +551,74 @@ export default function SolitaireGame({
     scoreLbClose.addEventListener('click', ()=>scoreLbModal.classList.remove('show'));
 
     updatePlayerStatus();
-
-    // Test TX (tek bağlanma)
-// 🧪 Test TX (tek bağlanma & kullanıcı dostu)
-    // 🧪 Test TX (Farcaster wallet öncelikli)
+    
+    // 🧪 Universal Test TX (Farcaster + MetaMask)
     if (testTxBtn && !(testTxBtn as any)._bound) {
       (testTxBtn as any)._bound = true;
-      testTxBtn.addEventListener('click', async () => {
+      testTxBtn.addEventListener("click", async () => {
         try {
           const btn = testTxBtn as HTMLButtonElement;
           btn.textContent = "⏳ Sending TX...";
           btn.disabled = true;
 
-          // 🪄 Farcaster ortamı kontrolü
-          if ((window as any).sdk?.wallet) {
-            console.log("📱 Farcaster ortamı algılandı — Farcaster wallet ile TX gönderiliyor...");
+          const CONTRACT_ADDR = "0xDb0f7F1fe7f52C548E486FF3473fC9122a7bC4fd";
+          let signer: any;
+          let userAddr: string;
+          let contract: any;
 
-            const provider = await sdk.wallet.getEthereumProvider();
-            if (!provider) throw new Error("Farcaster provider alınamadı");
+          // --- safely load Farcaster SDK ---
+          const fcSdk: any = (window as any).sdk || sdk;
+          if (!fcSdk) throw new Error("Farcaster SDK not found in window");
+
+          if (typeof fcSdk.init === "function") {
+            await fcSdk.init();
+            console.log("🔄 SDK initialized");
+          } else {
+            console.warn("⚠️ sdk.init not available — continuing anyway");
+          }
+
+          const wallet = fcSdk.wallet || (fcSdk.getWallet ? await fcSdk.getWallet() : null);
+          const hasWallet = !!wallet;
+          console.log("Wallet detected:", hasWallet);
+
+          // --- Farcaster wallet path ---
+          if (hasWallet) {
+            console.log("📱 Farcaster environment detected — sending TX via Farcaster wallet...");
+
+            const provider = await wallet.getEthereumProvider?.();
+            if (!provider) throw new Error("Could not obtain Farcaster provider");
 
             const browserProvider = new ethers.BrowserProvider(provider as any);
-            const signer = await browserProvider.getSigner();
-            const userAddr = await signer.getAddress();
+            signer = await browserProvider.getSigner();
+            userAddr = await signer.getAddress();
 
             console.log(`👤 Farcaster wallet: ${userAddr}`);
-
-            const contract = new ethers.Contract(
-                "0xDb0f7F1fe7f52C548E486FF3473fC9122a7bC4fd", // senin yeni kontrat adresin
-                CHECKIN_ABI as any,
-                signer
-            );
-
-            // 🔹 TX gönder
-            const tx = await contract.recordMyWin(123);
-            console.log("📤 TX sent:", tx.hash);
-
-            const rc = await tx.wait();
-            const txHash = (rc as any).hash ?? (rc as any).transactionHash ?? tx.hash;
-
-            console.log("✅ TX confirmed:", txHash);
-            alert(`✅ On-chain success!\nWallet: ${userAddr}\nTX: ${txHash}`);
-
-            btn.textContent = "🧪 Test TX (Success)";
-            btn.classList.add("confirmed");
-          } else {
-            console.warn("🌐 Farcaster cüzdan bulunamadı, MetaMask üzerinden deneyebilirsiniz.");
-            alert("⚠️ Farcaster wallet algılanmadı. Bu test sadece Farcaster ortamında çalışır.");
+            contract = new ethers.Contract(CONTRACT_ADDR, CHECKIN_ABI as any, signer);
           }
+          // --- fallback to MetaMask / Rabby ---
+          else if ((window as any).ethereum) {
+            console.log("🌐 MetaMask/Rabby detected — fallback mode");
+            const { contract: c, signer: s } = await getUserContract();
+            contract = c;
+            signer = s;
+            userAddr = await signer.getAddress();
+          }
+          else {
+            alert("⚠️ No wallet detected (Farcaster or MetaMask).");
+            return;
+          }
+
+          // --- send TX ---
+          const tx = await contract.recordMyWin(123);
+          console.log("📤 TX sent:", tx.hash);
+
+          const rc = await tx.wait();
+          const txHash = (rc as any).hash ?? (rc as any).transactionHash ?? tx.hash;
+          console.log("✅ TX confirmed:", txHash);
+
+          alert(`✅ On-chain success!\nWallet: ${userAddr}\nTX: ${txHash}`);
+          btn.textContent = "🧪 Test TX (Success)";
+          btn.classList.add("confirmed");
         } catch (err: any) {
           console.error("❌ Test TX failed:", err);
           alert(`❌ TX failed\nReason: ${err?.message || err}`);
@@ -611,6 +632,7 @@ export default function SolitaireGame({
         }
       });
     }
+
 
     // --- TOUCH BINDER ---
     function attachTouchHandlers() {
