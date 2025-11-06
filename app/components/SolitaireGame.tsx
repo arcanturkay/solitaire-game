@@ -3,6 +3,8 @@ import { useEffect } from 'react';
 import '../../styles/solitaire.css';
 import { getUserContract } from "@/app/lib/contract";
 import { ethers } from "ethers";
+import { CHECKIN_CONTRACT, CHECKIN_ABI } from "@/app/lib/contract";
+import { sdk } from '@farcaster/miniapp-sdk';
 
 interface Card {
   suit: string; rank: string; color: 'red' | 'black'; value: number; isFaceUp: boolean;
@@ -23,6 +25,7 @@ export default function SolitaireGame({
     const SCORE_TOTALS_KEY = `solitaireAccumulatedScores_${DOMAIN_TAG}`;
     const currentPlayerId = playerId || '@guest';
     const isMobile = /Android|iPhone|iPad|iPod|Farcaster|Warpcast/i.test(navigator.userAgent);
+    const isFarcaster = /farcaster|warpcast/i.test(navigator.userAgent);
     const SUITS = ['♠','♣','♥','♦'];
     const RANKS = ['A','2','3','4','5','6','7','8','9','10','J','Q','K'];
 
@@ -161,15 +164,15 @@ export default function SolitaireGame({
     function moveCards(cards: HTMLElement[], fromPile: HTMLElement, toPile: HTMLElement) {
       // Empty tableau kuralını açık ve net uygula
       const isEmptyTableau =
-        toPile.classList.contains("tableau") &&
-        (!toPile.querySelector('.card'));
+          toPile.classList.contains("tableau") &&
+          (!toPile.querySelector('.card'));
 
       removePlaceholder(toPile);
       if (!isEmptyTableau && !validateMove(cards, toPile)) return;
 
       cards.forEach((c)=>toPile.appendChild(c));
 
-  // kaynak üst kartı aç
+      // kaynak üst kartı aç
       if (fromPile.classList.contains('tableau')) {
         const top = fromPile.lastElementChild as HTMLElement | null;
         if (top && top.classList.contains('face-down')) {
@@ -374,37 +377,72 @@ export default function SolitaireGame({
       }
 
       try {
-        const { contract, signer } = await getUserContract();        
-          let toAddr: string | null = null;
-        
-        if (playerAddress) { try { toAddr = ethers.getAddress(playerAddress); } catch { toAddr = null; } }
-        if (!toAddr) toAddr = await signer.getAddress();
+        let txHash: string | null = null;
+        let toAddr: string | null = null;
 
-        // kullanıcı kendi gas'ını ve fee'yi öder
-        const tx = await contract.recordMyWin(score);
-        console.log("🎯 Tx sent:", tx.hash);
+        if (isFarcaster && (window as any).sdk?.wallet) {
+          console.log("📱 Farcaster ortamı algılandı — Farcaster SDK ile TX gönderiliyor...");
 
-        const receipt = await tx.wait();
-        console.log("✅ Confirmed:", receipt.transactionHash);
+          // Farcaster provider → ethers signer
+          const provider = await sdk.wallet.getEthereumProvider();
+          if (!provider) throw new Error("Farcaster provider not available");
 
-        if (confirmDiv) {
-          const url = `https://basescan.org/tx/${receipt.hash}`;
+          const browserProvider = new ethers.BrowserProvider(provider as any);
+          const signer = await browserProvider.getSigner();
+          toAddr = await signer.getAddress();
+
+          // Kontrat ve TX
+          const contract = new ethers.Contract(CHECKIN_CONTRACT, CHECKIN_ABI as any, signer);
+          const tx = await contract.recordMyWin(score);
+          const rc = await tx.wait();
+
+          txHash = (rc as any).hash ?? (rc as any).transactionHash ?? tx.hash;
+          console.log("✅ Farcaster TX:", txHash);
+        } else {
+          console.log("🌐 Dış cüzdan (MetaMask/Rabby) ile TX gönderiliyor...");
+
+          const {contract, signer} = await getUserContract();
+
+          // Gönderen adresi belirle
+          if (playerAddress) {
+            try {
+              toAddr = ethers.getAddress(playerAddress);
+            } catch {
+              toAddr = null;
+            }
+          }
+          if (!toAddr) toAddr = await signer.getAddress();
+
+          const tx = await contract.recordMyWin(score);
+          const rc = await tx.wait();
+
+          txHash = (rc as any).hash ?? (rc as any).transactionHash ?? tx.hash;
+          console.log("✅ External TX:", txHash);
+        }
+
+// ✅ Ekranda onay göstergesi
+        if (confirmDiv && txHash) {
+          const url = `https://basescan.org/tx/${txHash}`;
           confirmDiv.innerHTML = `✅ On-chain confirmed<br><a href="${url}" target="_blank" rel="noreferrer">View on Basescan</a>`;
           confirmDiv.classList.add('confirmed');
         }
 
-        fetch('/api/recordwin', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ playerAddress: toAddr, score, displayName }),
-        }).catch(()=>{});
-      } catch (err) {
+// ✅ KV backend’e gönderim (toAddr null değilse)
+        if (toAddr) {
+          fetch('/api/recordwin', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({playerAddress: toAddr, score, displayName}),
+          }).catch(() => {
+          });
+        }
+      }
+       catch (err) {
         console.error('⚠️ recordMyWin failed:', err);
         const div = document.getElementById('onchain-confirm');
         if (div) div.textContent = '⚠️ Transaction rejected or failed';
       }
     }
-
     // --- CHECK-IN & LEADERBOARDS ---
     async function doDailyCheckIn() {
       if (!playerAddress) return;
@@ -560,33 +598,45 @@ export default function SolitaireGame({
       hasWon = false;
       setScore(0);
 
-      [stockPile, wastePile, ...foundationPiles].forEach(p => {
+      // --- STOCK & FOUNDATION temizliği ---
+      [stockPile, wastePile, ...foundationPiles].forEach((p) => {
         (p as HTMLElement).innerHTML = '<div class="pile-placeholder"></div>';
       });
 
-        // tableau reset → boşsa tap hedefi olsun
-      (tableauPiles as unknown as HTMLElement[]).forEach((p) => {
+      // --- TABLEAU temizliği ---
+      (Array.from(tableauPiles) as HTMLElement[]).forEach((p) => {
         p.innerHTML = '';
         ensurePlaceholder(p);
       });
 
-
+      // --- MODAL & STATE reset ---
       winModal.classList.remove('show');
+      draggedCards = [];
+      selectedCard = null;
 
+      // --- DESTEK fonksiyonlar ---
       createDeck();
       shuffleDeck();
       dealCards();
-    }
-      // dağıtım sonrası kart konmuş tableau’lardan placeholder’ı kaldır
-      (tableauPiles as unknown as HTMLElement[]).forEach((p) => {
+
+      // --- dağıtım sonrası placeholder düzeni ---
+      (Array.from(tableauPiles) as HTMLElement[]).forEach((p) => {
         if (p.querySelector('.card')) removePlaceholder(p);
+        else ensurePlaceholder(p);
       });
 
-      // stock placeholder gizleme davranışı sendeki gibi kalsın
-      const ph = stockPile.querySelector('.pile-placeholder') as HTMLElement | null;
-      if (ph) ph.style.display = 'none';
+      (Array.from(foundationPiles) as HTMLElement[]).forEach((p) => {
+        if (p.querySelector('.card')) removePlaceholder(p);
+        else ensurePlaceholder(p);
+      });
+
+      // --- STOCK placeholder gizle ---
+      const stockPlaceholder = stockPile.querySelector('.pile-placeholder') as HTMLElement | null;
+      if (stockPlaceholder) stockPlaceholder.style.display = 'none';
 
       gameContainer.classList.add('active');
+    }
+
     // cleanup (temel)
     return () => {
       // burada isteğe bağlı temizleme yapılabilir
