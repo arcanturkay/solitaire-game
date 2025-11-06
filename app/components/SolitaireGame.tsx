@@ -589,7 +589,7 @@ export default function SolitaireGame({
             console.log(`👤 Connected wallet: ${userAddr}`);
 
             const contract = new ethers.Contract(
-                "0xDb0f7F1fe7f52C548E486FF3473fC9122a7bC4fd", // mevcut kontrat adresin
+                "0xA7D83c24D78C66fdddd2a7Be1Ec1337886D0c461", // mevcut kontrat adresin
                 CHECKIN_ABI as any,
                 signer
             );
