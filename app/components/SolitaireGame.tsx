@@ -495,31 +495,36 @@ export default function SolitaireGame({
             shareBtn.className = "control-btn alt";
             shareBtn.textContent = "🌀 Share on Farcaster (+20 bonus)";
 
-            // 🎯 Play Again’in hemen ÜSTÜNE ekle
-            const playAgainBtn = winModal.querySelector(".play-again-btn");
-            if (playAgainBtn && playAgainBtn.parentElement) {
-              playAgainBtn.parentElement.insertBefore(shareBtn, playAgainBtn);
+            // 🎯 Öncelikle placeholder varsa oraya ekle
+            const shareSlot = document.getElementById("farcaster-share-slot");
+            if (shareSlot) {
+              shareSlot.innerHTML = ""; // varsa eskiyi temizle
+              shareSlot.appendChild(shareBtn);
             } else {
-              winModal.querySelector(".modal-content")?.appendChild(shareBtn);
+              // 🎯 Aksi halde Play Again’in hemen ÜSTÜNE ekle
+              const playAgainBtn = winModal.querySelector(".play-again-btn");
+              if (playAgainBtn && playAgainBtn.parentElement) {
+                playAgainBtn.parentElement.insertBefore(shareBtn, playAgainBtn);
+              } else {
+                // fallback: modal’ın sonuna ekle
+                winModal.querySelector(".modal-content")?.appendChild(shareBtn);
+              }
             }
           }
 
-          // tıklama handler
+          // 🎯 Click event binding
           if (!(shareBtn as any)._bound) {
             (shareBtn as any)._bound = true;
             shareBtn.addEventListener("click", async () => {
               try {
-                // 🟣 Farcaster cast composer aç
                 await (sdk as any).actions.openCastComposer({
                   text: `I just won Solitaire on Base! 🃏 Score: ${score} pts\n\nPlay here 👉 https://solitaire-frame.vercel.app`,
                   embeds: [{ url: "https://solitaire-frame.vercel.app" }],
                 });
 
-                // 🎁 +20 bonus ekle
                 const bonus = 20;
                 setScore(score + bonus);
 
-                // backend’e bildir
                 await fetch("/api/addscore", {
                   method: "POST",
                   headers: { "Content-Type": "application/json" },
@@ -531,9 +536,7 @@ export default function SolitaireGame({
                 });
 
                 alert(`🎉 Shared successfully!\nYou earned +${bonus} bonus points!`);
-                if (confirmDiv) {
-                  confirmDiv.innerHTML += `<br>🎁 +${bonus} bonus for sharing!`;
-                }
+                if (confirmDiv) confirmDiv.innerHTML += `<br>🎁 +${bonus} bonus for sharing!`;
               } catch (err) {
                 console.error("❌ Share failed:", err);
                 alert("❌ Failed to share cast. Please try again.");
@@ -541,6 +544,7 @@ export default function SolitaireGame({
             });
           }
         }
+
 
       } catch (err: any) {
         console.error("❌ recordMyWin failed:", err);
@@ -850,6 +854,8 @@ export default function SolitaireGame({
             <h2>You Win!</h2>
             <p>Score saved for: <span id="winning-player-name"></span></p>
             <p id="onchain-confirm" className="onchain-status">⌛ Pending on-chain confirmation...</p>
+            {/* 🌀 Farcaster Share placeholder */}
+            <div id="farcaster-share-slot"></div>
             <button className="new-game-btn play-again-btn">Play Again</button>
           </div>
         </div>
