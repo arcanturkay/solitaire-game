@@ -380,34 +380,50 @@ export default function SolitaireGame({
         let txHash: string | null = null;
         let toAddr: string | null = null;
 
+        // ==================================================
+        // 📱 FARCASTER MINIAPP
+        // ==================================================
         if (isFarcaster && (window as any).sdk?.wallet) {
-          console.log("📱 Farcaster ortamı algılandı — Farcaster SDK ile TX gönderiliyor...");
+          console.log("📱 Farcaster environment detected — sending TX via RPC...");
 
-          // Farcaster provider → ethers signer
           const provider = await sdk.wallet.getEthereumProvider();
-          if (!provider) throw new Error("Farcaster provider not available");
+          if (!provider) throw new Error("Farcaster provider not found");
 
-          const browserProvider = new ethers.BrowserProvider(provider as any);
-          const signer = await browserProvider.getSigner();
-          toAddr = await signer.getAddress();
+          const accounts = await provider.request({ method: "eth_requestAccounts" });
+          toAddr = accounts?.[0];
 
-          // Kontrat ve TX
-          const contract = new ethers.Contract(CHECKIN_CONTRACT, CHECKIN_ABI as any, signer);
-          const tx = await contract.recordMyWin(score, { gasLimit: 250000 });
-          txHash = tx.hash;
-          console.log("📤 TX submitted (Farcaster):", txHash);
+          // ✅ Ethers interface sadece encode için kullanılıyor
+          const iface = new ethers.Interface(CHECKIN_ABI);
+          const data = iface.encodeFunctionData("recordMyWin", [score]);
+
+          // ✅ TX doğrudan RPC ile gönderiliyor
+          const tx = await provider.request({
+            method: "eth_sendTransaction",
+            params: [{
+              from: toAddr,
+              to: CHECKIN_CONTRACT,
+              data,
+              gas: "0x3d090" // 250000
+            }]
+          });
+
+          txHash = tx;
+          console.log("📤 Farcaster TX submitted:", txHash);
 
           if (confirmDiv && txHash) {
             const url = `https://basescan.org/tx/${txHash}`;
-            confirmDiv.innerHTML = `✅ TX submitted<br><a href="${url}" target="_blank" rel="noreferrer">View on Basescan</a>`;
+            confirmDiv.innerHTML = `✅ TX sent to wallet<br><a href="${url}" target="_blank" rel="noreferrer">View on Basescan</a>`;
             confirmDiv.classList.add('confirmed');
           }
-        } else {
-          console.log("🌐 Dış cüzdan (MetaMask/Rabby) ile TX gönderiliyor...");
+        }
+
+            // ==================================================
+            // 🌐 NORMAL WALLET (METAMASK/RABBY)
+        // ==================================================
+        else {
+          console.log("🌐 External wallet detected — sending TX via ethers...");
 
           const { contract, signer } = await getUserContract();
-
-          // Gönderen adresi belirle
           if (playerAddress) {
             try { toAddr = ethers.getAddress(playerAddress); } catch { toAddr = null; }
           }
@@ -415,19 +431,20 @@ export default function SolitaireGame({
 
           const tx = await contract.recordMyWin(score);
           const rc = await tx.wait();
+          txHash = rc?.hash ?? rc?.transactionHash ?? tx.hash;
 
-          txHash = (rc as any).hash ?? (rc as any).transactionHash ?? tx.hash;
-          console.log("✅ External TX:", txHash);
+          console.log("✅ External TX confirmed:", txHash);
+
+          if (confirmDiv && txHash) {
+            const url = `https://basescan.org/tx/${txHash}`;
+            confirmDiv.innerHTML = `✅ On-chain confirmed<br><a href="${url}" target="_blank" rel="noreferrer">View on Basescan</a>`;
+            confirmDiv.classList.add('confirmed');
+          }
         }
 
-// ✅ Ekranda onay göstergesi
-        if (confirmDiv && txHash) {
-          const url = `https://basescan.org/tx/${txHash}`;
-          confirmDiv.innerHTML = `✅ On-chain confirmed<br><a href="${url}" target="_blank" rel="noreferrer">View on Basescan</a>`;
-          confirmDiv.classList.add('confirmed');
-        }
-
-// ✅ KV backend’e gönderim (toAddr null değilse)
+        // ==================================================
+        // 📡 BACKEND UPDATE
+        // ==================================================
         if (toAddr) {
           fetch('/api/recordwin', {
             method: 'POST',
@@ -435,13 +452,14 @@ export default function SolitaireGame({
             body: JSON.stringify({ playerAddress: toAddr, score, displayName }),
           }).catch(() => {});
         }
-        }
-       catch (err) {
+
+      } catch (err) {
         console.error('⚠️ recordMyWin failed:', err);
         const div = document.getElementById('onchain-confirm');
         if (div) div.textContent = '⚠️ Transaction rejected or failed';
       }
     }
+
     // --- CHECK-IN & LEADERBOARDS ---
     async function doDailyCheckIn() {
       if (!playerAddress) return;
