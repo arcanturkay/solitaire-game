@@ -481,7 +481,7 @@ export default function SolitaireGame({
           }).catch(() => {});
         }
 
-// ==================================================
+        // ==================================================
 // 🌀 SHARE ON FARCASTER (BONUS +20)
 // ==================================================
         if (isFarcaster && (sdk as any)?.actions?.openCastComposer) {
@@ -541,6 +541,13 @@ export default function SolitaireGame({
             });
           }
         }
+
+      } catch (err: any) {
+        console.error("❌ recordMyWin failed:", err);
+        const div = document.getElementById("onchain-confirm");
+        if (div) div.textContent = "⚠️ Transaction rejected or failed";
+      }
+    }
 
 
     // --- CHECK-IN & LEADERBOARDS ---
