@@ -552,77 +552,66 @@ export default function SolitaireGame({
 
     updatePlayerStatus();
 
-    // 🧪 Universal Test TX (Farcaster + MetaMask)
     if (testTxBtn && !(testTxBtn as any)._bound) {
       (testTxBtn as any)._bound = true;
-      testTxBtn.addEventListener("click", async () => {
+      testTxBtn.addEventListener('click', async () => {
         try {
           const btn = testTxBtn as HTMLButtonElement;
           btn.textContent = "⏳ Sending TX...";
           btn.disabled = true;
 
-          const CONTRACT_ADDR = "0xDb0f7F1fe7f52C548E486FF3473fC9122a7bC4fd";
-          let signer: any;
-          let userAddr: string;
-          let contract: any;
+          const testScore = 123; // örnek test değeri (bunu gerçek oyundaki skorla değiştirebilirsin)
 
-          // --- safely load Farcaster SDK ---
-          const fcSdk: any = (window as any).sdk || sdk;
-          if (!fcSdk) throw new Error("Farcaster SDK not found in window");
-
-          if (typeof fcSdk.init === "function") {
-            await fcSdk.init();
-            console.log("🔄 SDK initialized");
-          } else {
-            console.warn("⚠️ sdk.init not available — continuing anyway");
-          }
-
-          const wallet = fcSdk.wallet || (fcSdk.getWallet ? await fcSdk.getWallet() : null);
-          const hasWallet = !!wallet;
-          console.log("Wallet detected:", hasWallet);
-
-          // --- Farcaster wallet path ---
-          if (hasWallet) {
-            console.log("📱 Farcaster environment detected — sending TX via Farcaster wallet...");
-
-            const provider = await wallet.getEthereumProvider?.();
-            if (!provider) throw new Error("Could not obtain Farcaster provider");
-
-            const browserProvider = new ethers.BrowserProvider(provider as any);
-            signer = await browserProvider.getSigner();
-            userAddr = await signer.getAddress();
-
-            console.log(`👤 Farcaster wallet: ${userAddr}`);
-            contract = new ethers.Contract(CONTRACT_ADDR, CHECKIN_ABI as any, signer);
-          }
-          // --- fallback to MetaMask / Rabby ---
-          else if ((window as any).ethereum) {
-            console.log("🌐 MetaMask/Rabby detected — fallback mode");
-            const { contract: c, signer: s } = await getUserContract();
-            contract = c;
-            signer = s;
-            userAddr = await signer.getAddress();
-          }
-          else {
-            alert("⚠️ No wallet detected (Farcaster or MetaMask).");
+          // 🚫 Eğer skor < 100 ise TX gönderme
+          if (testScore < 100) {
+            console.log(`⏸️ Score too low (${testScore}), TX skipped.`);
+            alert(`Score below 100 — no on-chain transaction.`);
+            btn.textContent = "🧪 Test Skipped (Score < 100)";
+            setTimeout(() => {
+              btn.textContent = "🧪 Test Onchain TX";
+              btn.removeAttribute("disabled");
+              btn.classList.remove("confirmed");
+            }, 3000);
             return;
           }
 
-          // --- send TX ---
-          const network = await signer.provider.getNetwork();
-          console.log("🌐 Connected Chain:", network.chainId);
-          
-          const winFee = await contract.winFee();
-          const tx = await contract.recordMyWin(123, { value: winFee });
-          console.log("📤 TX sent:", tx.hash);
+          console.log(`✅ Score ${testScore} qualifies, sending TX...`);
 
-          const rc = await tx.wait();
-          const txHash = (rc as any).hash ?? (rc as any).transactionHash ?? tx.hash;
-          console.log("✅ TX confirmed:", txHash);
+          // 🔹 Farcaster ortamı algılandı mı?
+          if ((window as any).sdk?.wallet) {
+            console.log("📱 Farcaster wallet detected — sending TX via Warpcast SDK...");
 
-          alert(`✅ On-chain success!\nWallet: ${userAddr}\nTX: ${txHash}`);
-          btn.textContent = "🧪 Test TX (Success)";
-          btn.classList.add("confirmed");
+            const provider = await sdk.wallet.getEthereumProvider();
+            const browserProvider = new ethers.BrowserProvider(provider as any);
+            const signer = await browserProvider.getSigner();
+            const userAddr = await signer.getAddress();
+
+            console.log(`👤 Connected wallet: ${userAddr}`);
+
+            const contract = new ethers.Contract(
+                "0xDb0f7F1fe7f52C548E486FF3473fC9122a7bC4fd", // mevcut kontrat adresin
+                CHECKIN_ABI as any,
+                signer
+            );
+
+            const tx = await contract.recordMyWin(testScore); // ⚡ ETH eklenmiyor, payable değil
+            console.log("📤 TX sent:", tx.hash);
+
+            const rc = await tx.wait();
+            const txHash = rc.hash ?? rc.transactionHash ?? tx.hash;
+
+            console.log("✅ TX confirmed:", txHash);
+            alert(`✅ On-chain success!\nWallet: ${userAddr}\nTX: ${txHash}`);
+
+            btn.textContent = "🧪 Test TX (Success)";
+            btn.classList.add("confirmed");
+          } else {
+            console.warn("🌐 Farcaster wallet not detected, MetaMask fallback.");
+            const { contract, signer } = await getUserContract();
+            const tx = await contract.recordMyWin(testScore);
+            const rc = await tx.wait();
+            alert(`✅ Success via MetaMask!\nTX: ${rc.hash}`);
+          }
         } catch (err: any) {
           console.error("❌ Test TX failed:", err);
           alert(`❌ TX failed\nReason: ${err?.message || err}`);
@@ -636,6 +625,7 @@ export default function SolitaireGame({
         }
       });
     }
+
 
 
     // --- TOUCH BINDER ---
