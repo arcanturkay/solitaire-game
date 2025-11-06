@@ -611,8 +611,9 @@ export default function SolitaireGame({
           // --- send TX ---
           const network = await signer.provider.getNetwork();
           console.log("🌐 Connected Chain:", network.chainId);
-
-          const tx = await contract.recordMyWin(123, { gasLimit: 300000 });
+          
+          const winFee = await contract.winFee();
+          const tx = await contract.recordMyWin(123, { value: winFee });
           console.log("📤 TX sent:", tx.hash);
 
           const rc = await tx.wait();
