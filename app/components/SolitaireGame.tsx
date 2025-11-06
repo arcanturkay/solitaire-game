@@ -407,7 +407,7 @@ export default function SolitaireGame({
             }]
           });
 
-          txHash = tx;
+          txHash = tx as string;
           console.log("📤 Farcaster TX submitted:", txHash);
 
           if (confirmDiv && txHash) {
