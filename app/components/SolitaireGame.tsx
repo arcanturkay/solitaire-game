@@ -481,33 +481,45 @@ export default function SolitaireGame({
           }).catch(() => {});
         }
 
-        // ==================================================
-        // 🌀 SHARE ON FARCASTER (BONUS +20)
-        // ==================================================
-        if (isFarcaster && (window as any).sdk?.actions?.openCastComposer) {
+// ==================================================
+// 🌀 SHARE ON FARCASTER (BONUS +20)
+// ==================================================
+        if (isFarcaster && (sdk as any)?.actions?.openCastComposer) {
           const shareBtnId = "share-on-farcaster-btn";
           let shareBtn = document.getElementById(shareBtnId) as HTMLButtonElement | null;
+
+          // buton yoksa oluştur
           if (!shareBtn) {
             shareBtn = document.createElement("button");
             shareBtn.id = shareBtnId;
             shareBtn.className = "control-btn alt";
             shareBtn.textContent = "🌀 Share on Farcaster (+20 bonus)";
-            winModal.querySelector(".modal-content")?.appendChild(shareBtn);
+
+            // 🎯 Play Again’in hemen ÜSTÜNE ekle
+            const playAgainBtn = winModal.querySelector(".play-again-btn");
+            if (playAgainBtn && playAgainBtn.parentElement) {
+              playAgainBtn.parentElement.insertBefore(shareBtn, playAgainBtn);
+            } else {
+              winModal.querySelector(".modal-content")?.appendChild(shareBtn);
+            }
           }
 
+          // tıklama handler
           if (!(shareBtn as any)._bound) {
             (shareBtn as any)._bound = true;
             shareBtn.addEventListener("click", async () => {
               try {
-                (await (sdk.actions as any).openCastComposer({
+                // 🟣 Farcaster cast composer aç
+                await (sdk as any).actions.openCastComposer({
                   text: `I just won Solitaire on Base! 🃏 Score: ${score} pts\n\nPlay here 👉 https://solitaire-frame.vercel.app`,
                   embeds: [{ url: "https://solitaire-frame.vercel.app" }],
-                }));
+                });
 
-                // 🎁 Add +20 bonus
+                // 🎁 +20 bonus ekle
                 const bonus = 20;
                 setScore(score + bonus);
 
+                // backend’e bildir
                 await fetch("/api/addscore", {
                   method: "POST",
                   headers: { "Content-Type": "application/json" },
@@ -519,7 +531,6 @@ export default function SolitaireGame({
                 });
 
                 alert(`🎉 Shared successfully!\nYou earned +${bonus} bonus points!`);
-
                 if (confirmDiv) {
                   confirmDiv.innerHTML += `<br>🎁 +${bonus} bonus for sharing!`;
                 }
@@ -530,13 +541,6 @@ export default function SolitaireGame({
             });
           }
         }
-
-      } catch (err: any) {
-        console.error("❌ recordMyWin failed:", err);
-        const div = document.getElementById("onchain-confirm");
-        if (div) div.textContent = "⚠️ Transaction rejected or failed";
-      }
-    }
 
 
     // --- CHECK-IN & LEADERBOARDS ---
