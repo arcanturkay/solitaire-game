@@ -584,11 +584,11 @@ export default function SolitaireGame({
           const tx = await contract.recordMyWin(123, { gasLimit: 250000 });
           console.log("📤 TX sent:", tx.hash);
 
-          const rc = await tx.wait();
-          const txHash = rc?.hash ?? tx.hash;
+          // ✅ Manual confirmation text (wait() yok)
+          alert(`✅ TX submitted!\nHash: ${tx.hash}\nView: https://basescan.org/tx/${tx.hash}`);
 
-          console.log("✅ TX confirmed:", txHash);
-          alert(`✅ TX confirmed!\nTX: ${txHash}`);
+          console.log("✅ TX confirmed:", tx.hash);
+          alert(`✅ TX confirmed!\nTX: ${tx.hash}`);
 
           btn.textContent = "🧪 Test TX (Success)";
           btn.classList.add("confirmed");
