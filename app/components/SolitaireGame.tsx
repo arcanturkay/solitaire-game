@@ -393,11 +393,15 @@ export default function SolitaireGame({
 
           // Kontrat ve TX
           const contract = new ethers.Contract(CHECKIN_CONTRACT, CHECKIN_ABI as any, signer);
-          const tx = await contract.recordMyWin(score);
-          const rc = await tx.wait();
+          const tx = await contract.recordMyWin(score, { gasLimit: 250000 });
+          txHash = tx.hash;
+          console.log("📤 TX submitted (Farcaster):", txHash);
 
-          txHash = (rc as any).hash ?? (rc as any).transactionHash ?? tx.hash;
-          console.log("✅ Farcaster TX:", txHash);
+          if (confirmDiv && txHash) {
+            const url = `https://basescan.org/tx/${txHash}`;
+            confirmDiv.innerHTML = `✅ TX submitted<br><a href="${url}" target="_blank" rel="noreferrer">View on Basescan</a>`;
+            confirmDiv.classList.add('confirmed');
+          }
         } else {
           console.log("🌐 Dış cüzdan (MetaMask/Rabby) ile TX gönderiliyor...");
 
