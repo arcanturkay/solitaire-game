@@ -581,7 +581,7 @@ export default function SolitaireGame({
           );
 
           // Send TX (no value, just gas)
-          const tx = await contract.recordMyWin(123);
+          const tx = await contract.recordMyWin(123, { gasLimit: 250000 });
           console.log("📤 TX sent:", tx.hash);
 
           const rc = await tx.wait();
