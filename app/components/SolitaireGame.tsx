@@ -560,11 +560,11 @@ export default function SolitaireGame({
           btn.textContent = "⏳ Sending TX...";
           btn.disabled = true;
 
-          const testScore = 123; // örnek test değeri (bunu gerçek oyundaki skorla değiştirebilirsin)
+          const score = 123; // örnek test değeri (bunu gerçek oyundaki skorla değiştirebilirsin)
 
           // 🚫 Eğer skor < 100 ise TX gönderme
-          if (testScore < 100) {
-            console.log(`⏸️ Score too low (${testScore}), TX skipped.`);
+          if (score < 100) {
+            console.log(`⏸️ Score too low (${score}), TX skipped.`);
             alert(`Score below 100 — no on-chain transaction.`);
             btn.textContent = "🧪 Test Skipped (Score < 100)";
             setTimeout(() => {
@@ -575,7 +575,7 @@ export default function SolitaireGame({
             return;
           }
 
-          console.log(`✅ Score ${testScore} qualifies, sending TX...`);
+          console.log(`✅ Score ${score} qualifies, sending TX...`);
 
           // 🔹 Farcaster ortamı algılandı mı?
           if ((window as any).sdk?.wallet) {
@@ -594,7 +594,7 @@ export default function SolitaireGame({
                 signer
             );
 
-            const tx = await contract.recordMyWin(testScore); // ⚡ ETH eklenmiyor, payable değil
+            const tx = await contract.recordMyWin(score); // ⚡ ETH eklenmiyor, payable değil
             console.log("📤 TX sent:", tx.hash);
 
             const rc = await tx.wait();
@@ -608,7 +608,7 @@ export default function SolitaireGame({
           } else {
             console.warn("🌐 Farcaster wallet not detected, MetaMask fallback.");
             const { contract, signer } = await getUserContract();
-            const tx = await contract.recordMyWin(testScore);
+            const tx = await contract.recordMyWin(score);
             const rc = await tx.wait();
             alert(`✅ Success via MetaMask!\nTX: ${rc.hash}`);
           }
