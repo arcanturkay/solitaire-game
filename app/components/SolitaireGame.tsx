@@ -560,61 +560,40 @@ export default function SolitaireGame({
           btn.textContent = "⏳ Sending TX...";
           btn.disabled = true;
 
-          const score = 123; // örnek test değeri (bunu gerçek oyundaki skorla değiştirebilirsin)
-
-          // 🚫 Eğer skor < 100 ise TX gönderme
-          if (score < 100) {
-            console.log(`⏸️ Score too low (${score}), TX skipped.`);
-            alert(`Score below 100 — no on-chain transaction.`);
-            btn.textContent = "🧪 Test Skipped (Score < 100)";
-            setTimeout(() => {
-              btn.textContent = "🧪 Test Onchain TX";
-              btn.removeAttribute("disabled");
-              btn.classList.remove("confirmed");
-            }, 3000);
-            return;
-          }
-
-          console.log(`✅ Score ${score} qualifies, sending TX...`);
-
-          // 🔹 Farcaster ortamı algılandı mı?
+          // Detect Farcaster or external wallet
+          let signer, contract;
           if ((window as any).sdk?.wallet) {
-            console.log("📱 Farcaster wallet detected — sending TX via Warpcast SDK...");
-
+            console.log("📱 Farcaster wallet detected");
             const provider = await sdk.wallet.getEthereumProvider();
             const browserProvider = new ethers.BrowserProvider(provider as any);
-            const signer = await browserProvider.getSigner();
-            const userAddr = await signer.getAddress();
-
-            console.log(`👤 Connected wallet: ${userAddr}`);
-
-            const contract = new ethers.Contract(
-                "0xA7D83c24D78C66fdddd2a7Be1Ec1337886D0c461", // mevcut kontrat adresin
-                CHECKIN_ABI as any,
-                signer
-            );
-
-            const tx = await contract.recordMyWin(score); // ⚡ ETH eklenmiyor, payable değil
-            console.log("📤 TX sent:", tx.hash);
-
-            const rc = await tx.wait();
-            const txHash = rc.hash ?? rc.transactionHash ?? tx.hash;
-
-            console.log("✅ TX confirmed:", txHash);
-            alert(`✅ On-chain success!\nWallet: ${userAddr}\nTX: ${txHash}`);
-
-            btn.textContent = "🧪 Test TX (Success)";
-            btn.classList.add("confirmed");
+            signer = await browserProvider.getSigner();
           } else {
-            console.warn("🌐 Farcaster wallet not detected, MetaMask fallback.");
-            const { contract, signer } = await getUserContract();
-            const winFee = await contract.winFee();
-            const tx = await contract.recordMyWin(score, { value: winFee });
-            const rc = await tx.wait();
-            alert(`✅ Success via MetaMask!\nTX: ${rc.hash}`);
+            console.log("🌐 External wallet (MetaMask/Rabby)");
+            const c = await getUserContract();
+            signer = c.signer;
           }
+
+          // Connect to your contract
+          contract = new ethers.Contract(
+              "0xA7D83c24D78C66fdddd2a7Be1Ec1337886D0c461", // ✅ your current deployed contract
+              CHECKIN_ABI as any,
+              signer
+          );
+
+          // Send TX (no value, just gas)
+          const tx = await contract.recordMyWin(123);
+          console.log("📤 TX sent:", tx.hash);
+
+          const rc = await tx.wait();
+          const txHash = rc?.hash ?? tx.hash;
+
+          console.log("✅ TX confirmed:", txHash);
+          alert(`✅ TX confirmed!\nTX: ${txHash}`);
+
+          btn.textContent = "🧪 Test TX (Success)";
+          btn.classList.add("confirmed");
         } catch (err: any) {
-          console.error("❌ Test TX failed:", err);
+          console.error("❌ TX failed:", err);
           alert(`❌ TX failed\nReason: ${err?.message || err}`);
           testTxBtn.textContent = "❌ Test TX Failed";
         } finally {
@@ -626,6 +605,7 @@ export default function SolitaireGame({
         }
       });
     }
+
 
 
 
