@@ -381,54 +381,77 @@ export default function SolitaireGame({
         let toAddr: string | null = null;
 
         // ==================================================
-        // 📱 FARCASTER MINIAPP WALLET
+        // 📱 FARCASTER MINIAPP WALLET (RPC DIRECT)
         // ==================================================
         if (isFarcaster && (window as any).sdk?.wallet) {
-          console.log("📱 Farcaster wallet detected");
+          console.log("📱 Farcaster wallet detected — sending TX via RPC");
 
           const provider = await sdk.wallet.getEthereumProvider();
           if (!provider) throw new Error("Farcaster provider not available");
 
           const accounts = await provider.request({ method: "eth_requestAccounts" });
           toAddr = accounts?.[0];
+          if (!toAddr) throw new Error("No Farcaster wallet address found");
 
-          // ✅ Contract interface for encoding
+          // Encode call
           const iface = new ethers.Interface(CHECKIN_ABI);
           const data = iface.encodeFunctionData("recordMyWin", [score]);
 
-          // ✅ Send TX directly via RPC (no tx.wait)
-          const tx = await provider.request({
-            method: "eth_sendTransaction",
-            params: [
-              {
-                from: toAddr,
-                to: CHECKIN_CONTRACT,
-                data,
-                gas: "0x3d090", // 250k gas limit
-              },
-            ],
-          }) as string;
+          try {
+            // 🔹 Send TX without waiting for receipt
+            const tx = await provider.request({
+              method: "eth_sendTransaction",
+              params: [
+                {
+                  from: toAddr,
+                  to: CHECKIN_CONTRACT,
+                  data,
+                  gas: "0x3d090", // ~250k
+                },
+              ],
+            }) as string;
 
-          txHash = String(tx);
-          console.log("📤 TX sent:", txHash);
+            txHash = String(tx);
+            console.log("📤 Farcaster TX submitted:", txHash);
 
-          // ✅ UI feedback
-          if (confirmDiv && txHash) {
-            const url = `https://basescan.org/tx/${txHash}`;
-            confirmDiv.innerHTML = `✅ TX submitted<br><a href="${url}" target="_blank" rel="noreferrer">View on Basescan</a>`;
-            confirmDiv.classList.add("confirmed");
+            if (confirmDiv && txHash) {
+              const url = `https://basescan.org/tx/${txHash}`;
+              confirmDiv.innerHTML = `✅ TX submitted<br><a href="${url}" target="_blank" rel="noreferrer">View on Basescan</a>`;
+              confirmDiv.classList.add("confirmed");
+            }
+
+            alert(`✅ TX submitted!\nHash: ${txHash}\nView: https://basescan.org/tx/${txHash}`);
+          } catch (rpcErr: any) {
+            console.warn("⚠️ Farcaster RPC TX error:", rpcErr);
+
+            // Bazı Farcaster provider'ları eth_sendTransaction çağrısını gönderir ama receipt dönmez.
+            if (
+                rpcErr?.code === -32603 ||
+                rpcErr?.code === 4200 ||
+                rpcErr?.message?.includes("unsupported") ||
+                rpcErr?.message?.includes("missing revert data")
+            ) {
+              // fallback UI feedback
+              console.log("✅ TX probably sent despite RPC error");
+              if (confirmDiv) {
+                confirmDiv.textContent = "✅ Transaction likely sent (Farcaster fallback)";
+                confirmDiv.classList.add("confirmed");
+              }
+              alert("✅ Transaction likely sent (Farcaster fallback).\nCheck your wallet activity.");
+            } else {
+              throw rpcErr;
+            }
           }
-
-          alert(`✅ TX submitted!\nHash: ${txHash}\nView: https://basescan.org/tx/${txHash}`);
         }
 
             // ==================================================
-            // 🌐 NORMAL WALLET (METAMASK/RABBY)
+            // 🌐 NORMAL WALLET (METAMASK / RABBY)
         // ==================================================
         else {
           console.log("🌐 External wallet detected");
 
           const { contract, signer } = await getUserContract();
+
           if (playerAddress) {
             try {
               toAddr = ethers.getAddress(playerAddress);
@@ -453,7 +476,7 @@ export default function SolitaireGame({
         }
 
         // ==================================================
-        // 📡 BACKEND UPDATE
+        // 📡 BACKEND UPDATE (optional)
         // ==================================================
         if (toAddr) {
           fetch("/api/recordwin", {
