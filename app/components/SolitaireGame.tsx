@@ -554,38 +554,55 @@ export default function SolitaireGame({
 
     // Test TX (tek bağlanma)
 // 🧪 Test TX (tek bağlanma & kullanıcı dostu)
+    // 🧪 Test TX (Farcaster wallet öncelikli)
     if (testTxBtn && !(testTxBtn as any)._bound) {
       (testTxBtn as any)._bound = true;
       testTxBtn.addEventListener('click', async () => {
         try {
-          // UI feedback
           const btn = testTxBtn as HTMLButtonElement;
           btn.textContent = "⏳ Sending TX...";
           btn.disabled = true;
 
-          // 1️⃣ Cüzdan bağlantısı al
-          const { contract, signer } = await getUserContract();
-          const userAddr = await signer.getAddress();
-          console.log(`👤 Connected wallet: ${userAddr}`);
+          // 🪄 Farcaster ortamı kontrolü
+          if ((window as any).sdk?.wallet) {
+            console.log("📱 Farcaster ortamı algılandı — Farcaster wallet ile TX gönderiliyor...");
 
-          // 2️⃣ Basit TX gönder
-          const tx = await contract.recordMyWin(123);
-          console.log("📤 TX sent:", tx.hash);
+            const provider = await sdk.wallet.getEthereumProvider();
+            if (!provider) throw new Error("Farcaster provider alınamadı");
 
-          // 3️⃣ Onay bekle
-          const rc = await tx.wait();
-          console.log("✅ TX mined:", rc.transactionHash);
+            const browserProvider = new ethers.BrowserProvider(provider as any);
+            const signer = await browserProvider.getSigner();
+            const userAddr = await signer.getAddress();
 
-          // 4️⃣ UI güncelle
-          alert(`✅ On-chain success!\nWallet: ${userAddr}\nTX: ${rc.transactionHash}`);
-          btn.textContent = "🧪 Test TX (Success)";
-          btn.classList.add("confirmed");
+            console.log(`👤 Farcaster wallet: ${userAddr}`);
+
+            const contract = new ethers.Contract(
+                "0xDb0f7F1fe7f52C548E486FF3473fC9122a7bC4fd", // senin yeni kontrat adresin
+                CHECKIN_ABI as any,
+                signer
+            );
+
+            // 🔹 TX gönder
+            const tx = await contract.recordMyWin(123);
+            console.log("📤 TX sent:", tx.hash);
+
+            const rc = await tx.wait();
+            const txHash = (rc as any).hash ?? (rc as any).transactionHash ?? tx.hash;
+
+            console.log("✅ TX confirmed:", txHash);
+            alert(`✅ On-chain success!\nWallet: ${userAddr}\nTX: ${txHash}`);
+
+            btn.textContent = "🧪 Test TX (Success)";
+            btn.classList.add("confirmed");
+          } else {
+            console.warn("🌐 Farcaster cüzdan bulunamadı, MetaMask üzerinden deneyebilirsiniz.");
+            alert("⚠️ Farcaster wallet algılanmadı. Bu test sadece Farcaster ortamında çalışır.");
+          }
         } catch (err: any) {
           console.error("❌ Test TX failed:", err);
           alert(`❌ TX failed\nReason: ${err?.message || err}`);
           testTxBtn.textContent = "❌ Test TX Failed";
         } finally {
-          // Reset after short delay
           setTimeout(() => {
             testTxBtn.textContent = "🧪 Test Onchain TX";
             testTxBtn.removeAttribute("disabled");
