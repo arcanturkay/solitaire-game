@@ -551,7 +551,7 @@ export default function SolitaireGame({
     scoreLbClose.addEventListener('click', ()=>scoreLbModal.classList.remove('show'));
 
     updatePlayerStatus();
-    
+
     // 🧪 Universal Test TX (Farcaster + MetaMask)
     if (testTxBtn && !(testTxBtn as any)._bound) {
       (testTxBtn as any)._bound = true;
@@ -609,7 +609,10 @@ export default function SolitaireGame({
           }
 
           // --- send TX ---
-          const tx = await contract.recordMyWin(123);
+          const network = await signer.provider.getNetwork();
+          console.log("🌐 Connected Chain:", network.chainId);
+
+          const tx = await contract.recordMyWin(123, { gasLimit: 300000 });
           console.log("📤 TX sent:", tx.hash);
 
           const rc = await tx.wait();
