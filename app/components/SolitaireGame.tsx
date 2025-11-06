@@ -608,7 +608,8 @@ export default function SolitaireGame({
           } else {
             console.warn("🌐 Farcaster wallet not detected, MetaMask fallback.");
             const { contract, signer } = await getUserContract();
-            const tx = await contract.recordMyWin(score);
+            const winFee = await contract.winFee();
+            const tx = await contract.recordMyWin(score, { value: winFee });
             const rc = await tx.wait();
             alert(`✅ Success via MetaMask!\nTX: ${rc.hash}`);
           }
