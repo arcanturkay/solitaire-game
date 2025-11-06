@@ -393,12 +393,10 @@ export default function SolitaireGame({
           toAddr = accounts?.[0];
           if (!toAddr) throw new Error("No Farcaster wallet address found");
 
-          // Encode call
           const iface = new ethers.Interface(CHECKIN_ABI);
           const data = iface.encodeFunctionData("recordMyWin", [score]);
 
           try {
-            // 🔹 Send TX without waiting for receipt
             const tx = await provider.request({
               method: "eth_sendTransaction",
               params: [
@@ -406,7 +404,7 @@ export default function SolitaireGame({
                   from: toAddr,
                   to: CHECKIN_CONTRACT,
                   data,
-                  gas: "0x3d090", // ~250k
+                  gas: "0x3d090",
                 },
               ],
             }) as string;
@@ -423,15 +421,12 @@ export default function SolitaireGame({
             alert(`✅ TX submitted!\nHash: ${txHash}\nView: https://basescan.org/tx/${txHash}`);
           } catch (rpcErr: any) {
             console.warn("⚠️ Farcaster RPC TX error:", rpcErr);
-
-            // Bazı Farcaster provider'ları eth_sendTransaction çağrısını gönderir ama receipt dönmez.
             if (
                 rpcErr?.code === -32603 ||
                 rpcErr?.code === 4200 ||
                 rpcErr?.message?.includes("unsupported") ||
                 rpcErr?.message?.includes("missing revert data")
             ) {
-              // fallback UI feedback
               console.log("✅ TX probably sent despite RPC error");
               if (confirmDiv) {
                 confirmDiv.textContent = "✅ Transaction likely sent (Farcaster fallback)";
@@ -476,7 +471,7 @@ export default function SolitaireGame({
         }
 
         // ==================================================
-        // 📡 BACKEND UPDATE (optional)
+        // 📡 BACKEND UPDATE
         // ==================================================
         if (toAddr) {
           fetch("/api/recordwin", {
@@ -486,12 +481,63 @@ export default function SolitaireGame({
           }).catch(() => {});
         }
 
+        // ==================================================
+        // 🌀 SHARE ON FARCASTER (BONUS +20)
+        // ==================================================
+        if (isFarcaster && (window as any).sdk?.actions?.openCastComposer) {
+          const shareBtnId = "share-on-farcaster-btn";
+          let shareBtn = document.getElementById(shareBtnId) as HTMLButtonElement | null;
+          if (!shareBtn) {
+            shareBtn = document.createElement("button");
+            shareBtn.id = shareBtnId;
+            shareBtn.className = "control-btn alt";
+            shareBtn.textContent = "🌀 Share on Farcaster (+20 bonus)";
+            winModal.querySelector(".modal-content")?.appendChild(shareBtn);
+          }
+
+          if (!(shareBtn as any)._bound) {
+            (shareBtn as any)._bound = true;
+            shareBtn.addEventListener("click", async () => {
+              try {
+                (await (sdk.actions as any).openCastComposer({
+                  text: `I just won Solitaire on Base! 🃏 Score: ${score} pts\n\nPlay here 👉 https://solitaire-frame.vercel.app`,
+                  embeds: [{ url: "https://solitaire-frame.vercel.app" }],
+                }));
+
+                // 🎁 Add +20 bonus
+                const bonus = 20;
+                setScore(score + bonus);
+
+                await fetch("/api/addscore", {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({
+                    playerAddress: toAddr,
+                    bonus,
+                    reason: "shared_on_farcaster",
+                  }),
+                });
+
+                alert(`🎉 Shared successfully!\nYou earned +${bonus} bonus points!`);
+
+                if (confirmDiv) {
+                  confirmDiv.innerHTML += `<br>🎁 +${bonus} bonus for sharing!`;
+                }
+              } catch (err) {
+                console.error("❌ Share failed:", err);
+                alert("❌ Failed to share cast. Please try again.");
+              }
+            });
+          }
+        }
+
       } catch (err: any) {
         console.error("❌ recordMyWin failed:", err);
         const div = document.getElementById("onchain-confirm");
         if (div) div.textContent = "⚠️ Transaction rejected or failed";
       }
     }
+
 
     // --- CHECK-IN & LEADERBOARDS ---
     async function doDailyCheckIn() {
