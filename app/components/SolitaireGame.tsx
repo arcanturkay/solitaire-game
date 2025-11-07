@@ -490,17 +490,16 @@ export default function SolitaireGame({
               (window as any).sdk?.wallet ||
               navigator.userAgent.includes("Warpcast");
 
-          const hasComposer =
-              (sdk as any)?.actions &&
-              typeof (sdk as any).actions.openCastComposer === "function";
+          const canOpenComposer =
+              (sdk as any)?.actions?.openCastComposer ||
+              (sdk as any)?.openUrl; // fallback destekle
 
-          if (isFarcasterEnv && hasComposer) {
+          if (isFarcasterEnv && canOpenComposer) {
             const shareBtnId = "share-on-farcaster-btn";
             let shareBtn = document.getElementById(
                 shareBtnId
             ) as HTMLButtonElement | null;
 
-            // 🎯 buton yoksa oluştur
             if (!shareBtn) {
               shareBtn = document.createElement("button");
               shareBtn.id = shareBtnId;
@@ -508,32 +507,30 @@ export default function SolitaireGame({
               shareBtn.style.marginTop = "10px";
               shareBtn.textContent = "🌀 Share on Farcaster (+20 bonus)";
 
-              // 🎯 Placeholder varsa oraya ekle
-              const shareSlot = document.getElementById("farcaster-share-slot");
-              if (shareSlot) {
-                shareSlot.innerHTML = "";
-                shareSlot.appendChild(shareBtn);
-              } else {
-                // 🎯 Yoksa Play Again'in hemen üstüne ekle
-                const playAgainBtn = winModal.querySelector(".play-again-btn");
-                if (playAgainBtn && playAgainBtn.parentElement) {
-                  playAgainBtn.parentElement.insertBefore(shareBtn, playAgainBtn);
-                } else {
-                  // fallback: modal'ın sonuna ekle
-                  winModal.querySelector(".modal-content")?.appendChild(shareBtn);
-                }
-              }
+              // Play Again'in hemen üstüne ekle
+              const playAgainBtn = winModal.querySelector(".play-again-btn");
+              playAgainBtn?.parentElement?.insertBefore(shareBtn, playAgainBtn);
             }
 
-            // 🎯 Click event binding
             if (!(shareBtn as any)._bound) {
               (shareBtn as any)._bound = true;
               shareBtn.addEventListener("click", async () => {
                 try {
-                  await (sdk as any).actions.openCastComposer({
-                    text: `I just won Solitaire on Base! 🃏 Score: ${score} pts\n\nPlay here 👉 https://solitaire-frame.vercel.app`,
-                    embeds: [{ url: "https://solitaire-frame.vercel.app" }],
-                  });
+                  const text = `I just won Solitaire on Base! 🃏 Score: ${score} pts\n\nPlay here 👉 https://solitaire-frame.vercel.app`;
+
+                  // ✅ Modern SDK varsa
+                  if ((sdk as any)?.actions?.openCastComposer) {
+                    await (sdk as any).actions.openCastComposer({
+                      text,
+                      embeds: [{ url: "https://solitaire-frame.vercel.app" }],
+                    });
+                  }
+                  // ✅ Eski SDK (sadece openUrl)
+                  else if ((sdk as any)?.openUrl) {
+                    await (sdk as any).openUrl({
+                      url: `warpcast://compose?text=${encodeURIComponent(text)}`,
+                    });
+                  }
 
                   // 🎁 Bonus puan ekle
                   const bonus = 20;
@@ -550,30 +547,19 @@ export default function SolitaireGame({
                   });
 
                   alert(`🎉 Shared successfully!\nYou earned +${bonus} bonus points!`);
-                  if (confirmDiv)
-                    confirmDiv.innerHTML += `<br>🎁 +${bonus} bonus for sharing!`;
+                  confirmDiv!.innerHTML += `<br>🎁 +${bonus} bonus for sharing!`;
                 } catch (err) {
                   console.error("❌ Share failed:", err);
-
-                  // 🚨 Eğer openCastComposer başarısızsa, fallback olarak Warpcast composer linki aç
-                  const warpcastUrl = `https://warpcast.com/~/compose?text=${encodeURIComponent(
-                      `I just won Solitaire on Base! 🃏 Score: ${score} pts\n\nPlay here 👉 https://solitaire-frame.vercel.app`
-                  )}`;
-                  window.open(warpcastUrl, "_blank");
-
-                  alert("Opened Warpcast composer instead ✅");
+                  alert("❌ Failed to share cast. Please try again.");
                 }
               });
             }
           } else {
-            console.log(
-                "ℹ️ Farcaster share button skipped — sdk.actions.openCastComposer not available"
-            );
+            console.log("ℹ️ Farcaster SDK not ready — skipping share button");
           }
         } catch (err) {
-          console.error("❌ Failed to init Farcaster share button:", err);
+          console.error("💥 Farcaster share init failed:", err);
         }
-
 
       } catch (err: any) {
         console.error("❌ recordMyWin failed:", err);
