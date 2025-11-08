@@ -489,58 +489,57 @@ export default function SolitaireGame({
               (window as any).sdk?.wallet ||
               navigator.userAgent.includes("Warpcast");
 
+          const sdkRef = (window as any).sdk;
           const canOpenComposer =
-              (sdk as any)?.actions?.openCastComposer ||
-              (sdk as any)?.openUrl; // fallback destekle
+              sdkRef?.actions?.openCastComposer || sdkRef?.openUrl;
 
           if (isFarcasterEnv && canOpenComposer) {
             console.log("🌀 Farcaster environment detected, preparing share button...");
 
-            // 🎯 Play Again butonunu bul
             const playAgainBtn = winModal.querySelector(
                 ".play-again-btn"
             ) as HTMLButtonElement | null;
 
             if (playAgainBtn && !document.getElementById("share-on-farcaster-btn")) {
-              // 🆕 Share butonunu oluştur
               const shareBtn = document.createElement("button");
               shareBtn.id = "share-on-farcaster-btn";
               shareBtn.className = "control-btn alt";
               shareBtn.style.marginLeft = "10px";
               shareBtn.textContent = "🌀 Share on Farcaster (+20 bonus)";
-
-              // Butonu “Play Again”in hemen yanına ekle
               playAgainBtn.insertAdjacentElement("afterend", shareBtn);
 
-              // 🎯 Click event binding
               shareBtn.addEventListener("click", async () => {
-                try {
-                  const text = `I just won Solitaire on Base! 🃏 Score: ${score} pts\n\nPlay here 👉 https://solitaire-frame.vercel.app`;
+                const text = `I just won Solitaire on Base! 🃏 Score: ${score} pts\n\nPlay here 👉 https://solitaire-frame.vercel.app`;
 
-                  // ✅ Modern SDK varsa
-                  if ((sdk as any)?.actions?.openCastComposer) {
-                    await (sdk as any).actions.openCastComposer({
+                try {
+                  // ✅ 1. Modern SDK (actions.openCastComposer)
+                  if (sdkRef?.actions?.openCastComposer) {
+                    console.log("🔹 Using sdk.actions.openCastComposer");
+                    // bazı versiyonlarda promise hiç dönmüyor — fire and forget
+                    sdkRef.actions.openCastComposer({
                       text,
                       embeds: [{ url: "https://solitaire-frame.vercel.app" }],
-                    });
+                    }).catch((e:any)=>console.warn("composer err:",e));
                   }
-                  // ✅ Eski SDK (sadece openUrl)
-                  else if ((sdk as any)?.openUrl) {
-                    await (sdk as any).openUrl({
+                  // ✅ 2. Legacy SDK (openUrl)
+                  else if (sdkRef?.openUrl) {
+                    console.log("🔹 Using sdk.openUrl");
+                    sdkRef.openUrl({
                       url: `warpcast://compose?text=${encodeURIComponent(text)}`,
-                    });
-                  } else {
-                    // ✅ Fallback: tarayıcıda Warpcast compose linki aç
+                    }).catch((e:any)=>console.warn("openUrl err:",e));
+                  }
+                  // ✅ 3. Fallback web compose
+                  else {
+                    console.log("🔹 Fallback warpcast web compose");
                     window.open(
                         `https://warpcast.com/~/compose?text=${encodeURIComponent(text)}`,
                         "_blank"
                     );
                   }
 
-                  // 🎁 Bonus puan ekle
+                  // 🎁 Bonus + backend update
                   const bonus = 20;
                   setScore(score + bonus);
-
                   await fetch("/api/addscore", {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
