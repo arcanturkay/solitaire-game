@@ -481,8 +481,7 @@ export default function SolitaireGame({
           }).catch(() => {});
         }
 
-        // ==================================================
-// 🌀 SHARE ON FARCASTER (BONUS +20)
+        // 🌀 SHARE ON FARCASTER (BONUS +20)
 // ==================================================
         try {
           const isFarcasterEnv =
@@ -495,25 +494,25 @@ export default function SolitaireGame({
               (sdk as any)?.openUrl; // fallback destekle
 
           if (isFarcasterEnv && canOpenComposer) {
-            const shareBtnId = "share-on-farcaster-btn";
-            let shareBtn = document.getElementById(
-                shareBtnId
+            console.log("🌀 Farcaster environment detected, preparing share button...");
+
+            // 🎯 Play Again butonunu bul
+            const playAgainBtn = winModal.querySelector(
+                ".play-again-btn"
             ) as HTMLButtonElement | null;
 
-            if (!shareBtn) {
-              shareBtn = document.createElement("button");
-              shareBtn.id = shareBtnId;
+            if (playAgainBtn && !document.getElementById("share-on-farcaster-btn")) {
+              // 🆕 Share butonunu oluştur
+              const shareBtn = document.createElement("button");
+              shareBtn.id = "share-on-farcaster-btn";
               shareBtn.className = "control-btn alt";
-              shareBtn.style.marginTop = "10px";
+              shareBtn.style.marginLeft = "10px";
               shareBtn.textContent = "🌀 Share on Farcaster (+20 bonus)";
 
-              // Play Again'in hemen üstüne ekle
-              const playAgainBtn = winModal.querySelector(".play-again-btn");
-              playAgainBtn?.parentElement?.insertBefore(shareBtn, playAgainBtn);
-            }
+              // Butonu “Play Again”in hemen yanına ekle
+              playAgainBtn.insertAdjacentElement("afterend", shareBtn);
 
-            if (!(shareBtn as any)._bound) {
-              (shareBtn as any)._bound = true;
+              // 🎯 Click event binding
               shareBtn.addEventListener("click", async () => {
                 try {
                   const text = `I just won Solitaire on Base! 🃏 Score: ${score} pts\n\nPlay here 👉 https://solitaire-frame.vercel.app`;
@@ -530,6 +529,12 @@ export default function SolitaireGame({
                     await (sdk as any).openUrl({
                       url: `warpcast://compose?text=${encodeURIComponent(text)}`,
                     });
+                  } else {
+                    // ✅ Fallback: tarayıcıda Warpcast compose linki aç
+                    window.open(
+                        `https://warpcast.com/~/compose?text=${encodeURIComponent(text)}`,
+                        "_blank"
+                    );
                   }
 
                   // 🎁 Bonus puan ekle
@@ -547,7 +552,8 @@ export default function SolitaireGame({
                   });
 
                   alert(`🎉 Shared successfully!\nYou earned +${bonus} bonus points!`);
-                  confirmDiv!.innerHTML += `<br>🎁 +${bonus} bonus for sharing!`;
+                  if (confirmDiv)
+                    confirmDiv.innerHTML += `<br>🎁 +${bonus} bonus for sharing!`;
                 } catch (err) {
                   console.error("❌ Share failed:", err);
                   alert("❌ Failed to share cast. Please try again.");
@@ -869,10 +875,13 @@ export default function SolitaireGame({
             <h2>You Win!</h2>
             <p>Score saved for: <span id="winning-player-name"></span></p>
             <p id="onchain-confirm" className="onchain-status">⌛ Pending on-chain confirmation...</p>
-            {/* 🌀 Farcaster Share placeholder */}
-            <div id="Farcaster Share "></div>
+            <div className="win-actions">
+              <button id="share-on-farcaster-btn" className="control-btn alt">
+                🌀 Share on Farcaster (+20 bonus)
+              </button>
             <button className="new-game-btn play-again-btn">Play Again</button>
           </div>
+         </div>
         </div>
 
         {/* 🧮 Score Leaderboard */}

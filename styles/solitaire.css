@@ -668,3 +668,10 @@ html, body { touch-action: manipulation; }
 .modal-content::-webkit-scrollbar-thumb:hover {
   background: rgba(0, 0, 0, 0.35);
 }
+.win-actions {
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 10px;
+}
