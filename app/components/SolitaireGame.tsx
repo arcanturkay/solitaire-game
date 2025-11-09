@@ -356,8 +356,8 @@ export default function SolitaireGame({
     // --- WIN & ONCHAIN ---
     async function checkWinCondition() {
       let total = 0;
-      foundationPiles.forEach(p => {
-        total += (p as HTMLElement).querySelectorAll('.card').length;
+      foundationPiles.forEach((p) => {
+        total += (p as HTMLElement).querySelectorAll(".card").length;
       });
 
       if (total !== 52 || hasWon) return;
@@ -368,12 +368,12 @@ export default function SolitaireGame({
       if (winningPlayerNameDisplay)
         winningPlayerNameDisplay.textContent = `${displayName || currentPlayerId} (${score} pts)`;
 
-      winModal.classList.add('show');
+      winModal.classList.add("show");
 
-      const confirmDiv = document.getElementById('onchain-confirm');
+      const confirmDiv = document.getElementById("onchain-confirm");
       if (confirmDiv) {
-        confirmDiv.textContent = '⌛ Waiting for wallet confirmation...';
-        confirmDiv.classList.remove('confirmed');
+        confirmDiv.textContent = "⌛ Waiting for wallet confirmation...";
+        confirmDiv.classList.remove("confirmed");
       }
 
       try {
@@ -407,18 +407,19 @@ export default function SolitaireGame({
                   gas: "0x3d090",
                 },
               ],
-            }) as string;
+            });
 
             txHash = String(tx);
             console.log("📤 Farcaster TX submitted:", txHash);
 
             if (confirmDiv && txHash) {
               const url = `https://basescan.org/tx/${txHash}`;
-              confirmDiv.innerHTML = `✅ TX submitted<br><a href="${url}" target="_blank" rel="noreferrer">View on Basescan</a>`;
+              confirmDiv.innerHTML = `✅ On-chain confirmed<br><a href="${url}" target="_blank" rel="noreferrer">View on Basescan</a>`;
               confirmDiv.classList.add("confirmed");
             }
 
-            alert(`✅ TX submitted!\nHash: ${txHash}\nView: https://basescan.org/tx/${txHash}`);
+            // ❌ alert yerine sessiz log (MiniApp alert'leri bazen blokluyor)
+            console.log(`✅ TX submitted on Base → ${txHash}`);
           } catch (rpcErr: any) {
             console.warn("⚠️ Farcaster RPC TX error:", rpcErr);
             if (
@@ -432,7 +433,6 @@ export default function SolitaireGame({
                 confirmDiv.textContent = "✅ Transaction likely sent (Farcaster fallback)";
                 confirmDiv.classList.add("confirmed");
               }
-              alert("✅ Transaction likely sent (Farcaster fallback).\nCheck your wallet activity.");
             } else {
               throw rpcErr;
             }
@@ -459,8 +459,6 @@ export default function SolitaireGame({
           const tx = await contract.recordMyWin(score, { gasLimit: 250000 });
           console.log("📤 TX sent:", tx.hash);
 
-          alert(`✅ TX submitted!\nHash: ${tx.hash}\nView: https://basescan.org/tx/${tx.hash}`);
-
           txHash = tx.hash;
 
           if (confirmDiv && txHash) {
@@ -481,66 +479,55 @@ export default function SolitaireGame({
           }).catch(() => {});
         }
 
+        // ==================================================
         // 🌀 SHARE ON FARCASTER (BONUS +20)
-// ==================================================
+        // ==================================================
         try {
+          const sdkRef = (window as any).sdk || (window as any).farcaster;
           const isFarcasterEnv =
-              isFarcaster ||
-              (window as any).sdk?.wallet ||
-              navigator.userAgent.includes("Warpcast");
+              isFarcaster || sdkRef?.wallet || navigator.userAgent.includes("Warpcast");
 
-          const sdkRef = (window as any).sdk;
-          const canOpenComposer =
-              sdkRef?.actions?.openCastComposer || sdkRef?.openUrl;
+          const canOpenComposer = sdkRef?.actions?.openCastComposer || sdkRef?.openUrl;
 
           if (isFarcasterEnv && canOpenComposer) {
-            console.log("🌀 Farcaster environment detected, preparing share button...");
+            console.log("🌀 Farcaster env detected — enabling share button");
 
-            const playAgainBtn = winModal.querySelector(
-                ".play-again-btn"
-            ) as HTMLButtonElement | null;
-
+            const playAgainBtn = winModal.querySelector(".play-again-btn") as HTMLElement | null;
             if (playAgainBtn && !document.getElementById("share-on-farcaster-btn")) {
               const shareBtn = document.createElement("button");
               shareBtn.id = "share-on-farcaster-btn";
               shareBtn.className = "control-btn alt";
               shareBtn.style.marginLeft = "10px";
+              shareBtn.style.pointerEvents = "auto";
               shareBtn.textContent = "🌀 Share on Farcaster (+20 bonus)";
-              playAgainBtn.insertAdjacentElement("afterend", shareBtn);
+              playAgainBtn.insertAdjacentElement("beforebegin", shareBtn);
 
-              shareBtn.addEventListener("click", async () => {
-                const text = `I just won Solitaire on Base! 🃏 Score: ${score} pts\n\nPlay here 👉 https://solitaire-frame.vercel.app`;
-
+              shareBtn.addEventListener("click", () => {
                 try {
-                  // ✅ 1. Modern SDK (actions.openCastComposer)
+                  const text = `I just won Solitaire on Base! 🃏 Score: ${score} pts\n\nPlay here 👉 https://solitaire-frame.vercel.app`;
+
                   if (sdkRef?.actions?.openCastComposer) {
-                    console.log("🔹 Using sdk.actions.openCastComposer");
-                    // bazı versiyonlarda promise hiç dönmüyor — fire and forget
+                    console.log("🔹 Using openCastComposer");
                     sdkRef.actions.openCastComposer({
                       text,
                       embeds: [{ url: "https://solitaire-frame.vercel.app" }],
-                    }).catch((e:any)=>console.warn("composer err:",e));
-                  }
-                  // ✅ 2. Legacy SDK (openUrl)
-                  else if (sdkRef?.openUrl) {
-                    console.log("🔹 Using sdk.openUrl");
+                    });
+                  } else if (sdkRef?.openUrl) {
+                    console.log("🔹 Using openUrl");
                     sdkRef.openUrl({
                       url: `warpcast://compose?text=${encodeURIComponent(text)}`,
-                    }).catch((e:any)=>console.warn("openUrl err:",e));
-                  }
-                  // ✅ 3. Fallback web compose
-                  else {
-                    console.log("🔹 Fallback warpcast web compose");
+                    });
+                  } else {
                     window.open(
                         `https://warpcast.com/~/compose?text=${encodeURIComponent(text)}`,
                         "_blank"
                     );
                   }
 
-                  // 🎁 Bonus + backend update
+                  // 🎁 Bonus ekle
                   const bonus = 20;
                   setScore(score + bonus);
-                  await fetch("/api/addscore", {
+                  fetch("/api/addscore", {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({
@@ -550,29 +537,29 @@ export default function SolitaireGame({
                     }),
                   });
 
-                  alert(`🎉 Shared successfully!\nYou earned +${bonus} bonus points!`);
+                  shareBtn.textContent = "✅ Shared! (+20)";
+                  shareBtn.style.opacity = "0.8";
                   if (confirmDiv)
                     confirmDiv.innerHTML += `<br>🎁 +${bonus} bonus for sharing!`;
                 } catch (err) {
                   console.error("❌ Share failed:", err);
-                  alert("❌ Failed to share cast. Please try again.");
+                  alert("❌ Failed to share cast.");
                 }
               });
             }
           } else {
-            console.log("ℹ️ Farcaster SDK not ready — skipping share button");
+            console.log("ℹ️ Farcaster SDK not available — skipping share button");
           }
         } catch (err) {
           console.error("💥 Farcaster share init failed:", err);
         }
-
       } catch (err: any) {
         console.error("❌ recordMyWin failed:", err);
         const div = document.getElementById("onchain-confirm");
         if (div) div.textContent = "⚠️ Transaction rejected or failed";
       }
     }
-
+    
 
     // --- CHECK-IN & LEADERBOARDS ---
     async function doDailyCheckIn() {
