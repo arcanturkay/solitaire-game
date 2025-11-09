@@ -491,7 +491,16 @@ export default function SolitaireGame({
               navigator.userAgent.includes("Warpcast") ||
               navigator.userAgent.includes("FarcasterFrame");
 
-          console.log("🌀 Enabling Farcaster share button — SDK:", !!sdkRef);
+          console.log("🌀 Enabling Farcaster share button — SDK detected:", !!sdkRef);
+
+          // Debug amaçlı ortamı tablo şeklinde logla (opsiyonel)
+          console.table({
+            hasSdk: !!sdkRef,
+            hasActions: !!sdkRef?.actions,
+            hasOpenCastComposer: !!sdkRef?.actions?.openCastComposer,
+            hasOpenUrl: !!sdkRef?.openUrl,
+            isWarpcastUA: navigator.userAgent.includes("Warpcast"),
+          });
 
           const playAgainBtn = winModal.querySelector(".play-again-btn") as HTMLElement | null;
           if (playAgainBtn && !document.getElementById("share-on-farcaster-btn")) {
@@ -506,8 +515,11 @@ export default function SolitaireGame({
             shareBtn.addEventListener("click", async () => {
               try {
                 const text = `I just won Solitaire on Base! 🃏 Score: ${score} pts\n\nPlay here 👉 https://solitaire-frame.vercel.app`;
+                const encoded = encodeURIComponent(text);
+                const warpcastWebUrl = `https://warpcast.com/~/compose?text=${encoded}`;
+                const warpcastAppUrl = `warpcast://compose?text=${encoded}`;
 
-                // ✅ SDK varsa native composer
+                // ✅ SDK modern (openCastComposer)
                 if (sdkRef?.actions?.openCastComposer) {
                   console.log("🔹 Using openCastComposer");
                   await sdkRef.actions.openCastComposer({
@@ -515,20 +527,24 @@ export default function SolitaireGame({
                     embeds: [{ url: "https://solitaire-frame.vercel.app" }],
                   });
                 }
-                // ✅ SDK'nın eski versiyonu (openUrl)
+                // ✅ SDK eski (openUrl)
                 else if (sdkRef?.openUrl) {
-                  console.log("🔹 Using openUrl");
-                  await sdkRef.openUrl({
-                    url: `warpcast://compose?text=${encodeURIComponent(text)}`,
-                  });
+                  console.log("🔹 Using openUrl (legacy SDK)");
+                  await sdkRef.openUrl({ url: warpcastAppUrl });
                 }
-                // 🌐 Web fallback
+                // 🌐 Web fallback (direct link)
                 else {
-                  console.log("🌐 No SDK — opening web composer");
-                  window.open(
-                      `https://warpcast.com/~/compose?text=${encodeURIComponent(text)}`,
-                      "_blank"
-                  );
+                  console.log("🌐 No SDK — redirecting to web composer");
+                  try {
+                    const opened = window.open(warpcastWebUrl, "_blank");
+                    if (!opened) {
+                      // bazı miniapp’lerde window.open sessizce bloklanıyor
+                      console.log("⚠️ window.open blocked, redirecting instead");
+                      window.location.href = warpcastWebUrl;
+                    }
+                  } catch {
+                    window.location.href = warpcastWebUrl;
+                  }
                 }
 
                 // 🎁 Bonus ekle
@@ -552,14 +568,13 @@ export default function SolitaireGame({
 
               } catch (err) {
                 console.error("❌ Share failed:", err);
-                alert("❌ Failed to share cast.");
+                alert("❌ Failed to share cast. Try again!");
               }
             });
           }
         } catch (err) {
           console.error("💥 Farcaster share init failed:", err);
         }
-
 
       } catch (err: any) {
         console.error("❌ recordMyWin failed:", err);
