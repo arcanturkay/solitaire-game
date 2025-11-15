@@ -479,18 +479,16 @@ export default function SolitaireGame({
           }).catch(() => {});
         }
 
-/// ==================================================
-// 🌀 SHARE ON FARCASTER (BONUS +20, AUTO CLOSE, NEW GAME, TX LINK, DYNAMIC MSG)
+// ==================================================
+// 🌀 SHARE ON FARCASTER (MOBILE SAFE + WEB FULL MODE)
 // ==================================================
         try {
           const sdkRef = (window as any).sdk || (window as any).farcaster;
 
-          console.log("🌀 Enabling Farcaster share button — SDK detected:", !!sdkRef);
+          console.log("🌀 Farcaster share init — SDK:", sdkRef);
 
           const shareBtn = document.getElementById("share-on-farcaster-btn") as HTMLButtonElement | null;
-          if (!shareBtn || (shareBtn as any)._bound) {
-            return;
-          }
+          if (!shareBtn || (shareBtn as any)._bound) return;
           (shareBtn as any)._bound = true;
 
           shareBtn.style.pointerEvents = "auto";
@@ -498,78 +496,77 @@ export default function SolitaireGame({
 
           shareBtn.addEventListener("click", async () => {
             try {
-              //
-              // ⭐ 1) Kullanıcı adı
-              //
+              const isMiniApp = !!(sdkRef?.actions?.composeCast);
+              console.log("📱 MiniApp environment:", isMiniApp);
+
+              // ================ USERNAME =================
               const username = sdkRef?.context?.user?.username
                   ? `@${sdkRef.context.user.username}`
                   : "I";
 
-              //
-              // ⭐ 2) Dinamik skor yorumu
-              //
+              // ================ SCORE COMMENT ============
               let scoreComment = "";
               if (score >= 150) scoreComment = "🔥 Insane run!";
               else if (score >= 130) scoreComment = "⚡ Cracked performance!";
               else if (score >= 100) scoreComment = "💫 Smooth win!";
               else scoreComment = "🎮 Nice clean run!";
 
-              //
-              // ⭐ 3) TX linki (txHash değişkenin zaten kodunda geliyor)
-              //
+              // ================ TX LINK ==================
               const txLink = txHash
                   ? `\n🧾 On-chain score: https://basescan.org/tx/${txHash}\n`
                   : "\n";
 
-              //
-              // ⭐ 4) Final Cast Metni
-              //
               const tracking = "solitaire_share_v1";
 
-              const text =
-                  `♦️ ♥️ ♠️ ♣️ ${username} just cleared a Solitaire run on Farcaster!\n` +
+              // ==================================================
+              // 📱 MOBILE MINI APP SAFE MODE (NO EMBEDS)
+              // ==================================================
+              const mobileText =
+                  `${username} just cleared a Solitaire run on Farcaster!\n` +
+                  `Score: ${score} pts — ${scoreComment}\n\n` +
+                  `Try it & climb the leaderboard 👇\n` +
+                  `https://solitaire-frame.vercel.app?ref=${tracking}`;
+
+              // ==================================================
+              // 💻 WEB — FULL RICH MODE w/ ICONS + EMBEDS
+              // ==================================================
+              const webText =
+                  `♦️ ♥️ ♠️ ♣️  ${username} just cleared a Solitaire run on Farcaster!\n` +
                   `🍀 Score: ${score} pts — ${scoreComment}\n` +
                   `🎁 +20 bonus earned for casting it on-chain.\n` +
                   txLink +
                   `\nTry it & climb the leaderboard 👇\n` +
                   `https://solitaire-frame.vercel.app?ref=${tracking}`;
 
-              const warpcastWebUrl = `https://warpcast.com/~/compose?text=${encodeURIComponent(text)}`;
+              // ==================================================
+              // 🚀 EXECUTION LOGIC
+              // ==================================================
 
-              //
-              // ⭐ 5) MiniApp içinde cast composer
-              //
-              if (sdkRef?.actions?.composeCast) {
-                console.log("🔹 Using composeCast");
+              if (isMiniApp) {
+                console.log("📱 Using composeCast — MOBILE SAFE MODE");
+
                 const result = await sdkRef.actions.composeCast({
-                  text,
-                  embeds: ["https://solitaire-frame.vercel.app"],
+                  text: mobileText,   // 🚨 embed yok → crash fix
                 });
 
                 if (!result?.cast) {
                   console.log("User canceled cast");
                   return;
                 }
-              }
-                  //
-                  // ⭐ 6) Eski SDK fallback
-              //
-              else if (sdkRef?.openUrl) {
-                console.log("🔹 Using openUrl");
-                await sdkRef.openUrl({ url: warpcastWebUrl });
-              }
-                  //
-                  // ⭐ 7) Normal browser fallback
-              //
-              else {
-                console.log("🌐 Opening Warpcast Web Composer");
-                const opened = window.open(warpcastWebUrl, "_blank");
-                if (!opened) window.location.href = warpcastWebUrl;
+
+              } else {
+                console.log("💻 Using web fallback — OPEN COMPOSER");
+
+                const url =
+                    "https://warpcast.com/~/compose?text=" + encodeURIComponent(webText);
+
+                const opened = window.open(url, "_blank");
+                if (!opened) window.location.href = url;
               }
 
-              //
-              // ⭐ 8) BONUS +20 kaydet
-              //
+              // ==================================================
+              // 🎁 BONUS +20
+              // ==================================================
               const bonus = 20;
               setScore(score + bonus);
 
@@ -585,15 +582,12 @@ export default function SolitaireGame({
                 });
               }
 
-              //
-              // ⭐ 9) UI feedback
-              //
+              // ==================================================
+              // UI UPDATES
+              // ==================================================
               shareBtn.textContent = "✅ Shared! (+20 bonus)";
               shareBtn.style.opacity = "0.7";
 
-              //
-              // ⭐ 10) Win Modal kapat + yeni oyunu başlat
-              //
               const winModal = document.getElementById("win-modal");
               if (winModal) winModal.classList.remove("visible");
 
