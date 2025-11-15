@@ -479,8 +479,8 @@ export default function SolitaireGame({
           }).catch(() => {});
         }
 
-// ==================================================
-// 🌀 SHARE ON FARCASTER (BONUS +20)
+/// ==================================================
+// 🌀 SHARE ON FARCASTER (BONUS +20, AUTO CLOSE, NEW GAME)
 // ==================================================
         try {
           const sdkRef = (window as any).sdk || (window as any).farcaster;
@@ -489,51 +489,56 @@ export default function SolitaireGame({
 
           const shareBtn = document.getElementById("share-on-farcaster-btn") as HTMLButtonElement | null;
           if (!shareBtn || (shareBtn as any)._bound) {
-            // buton yoksa ya da daha önce bağlandıysa tekrar etme
             return;
           }
           (shareBtn as any)._bound = true;
 
-          // Modal içindeyken butonu aktif et
           shareBtn.style.pointerEvents = "auto";
           shareBtn.disabled = false;
 
           shareBtn.addEventListener("click", async () => {
             try {
-              const text = `I just won Solitaire on Base! 🃏 Score: ${score} pts\n\nPlay here 👉 https://solitaire-frame.vercel.app`;
+              // 🔹 Kullanıcı adı varsa cast içine ekle
+              const username = sdkRef?.context?.user?.username
+                  ? `@${sdkRef.context.user.username}`
+                  : "a player";
+
+              const tracking = "solitaire_share_v1";
+
+              const text =
+                  `🎮 ${username} just won Solitaire on Base!\n` +
+                  `🧩 Score: ${score} pts\n\n` +
+                  `Play & compete 👇\n` +
+                  `https://solitaire-frame.vercel.app?ref=${tracking}`;
+
               const warpcastWebUrl = `https://warpcast.com/~/compose?text=${encodeURIComponent(text)}`;
 
-              // 1️⃣ Mini App içindeysek: resmi yol → composeCast
+              // 1️⃣ Mini App içi — composeCast
               if (sdkRef?.actions?.composeCast) {
-                console.log("🔹 Using sdk.actions.composeCast");
+                console.log("🔹 Using composeCast");
                 const result = await sdkRef.actions.composeCast({
                   text,
-                  embeds: ["https://solitaire-frame.vercel.app"], // max 2 embed
-                  // istersen channelKey de verebilirsin
-                  // channelKey: "base"
+                  embeds: ["https://solitaire-frame.vercel.app"],
                 });
 
-                // Kullanıcı cancel ederse bonus vermeyelim
                 if (!result?.cast) {
-                  console.log("User cancelled cast");
+                  console.log("User canceled cast");
                   return;
                 }
               }
-              // 2️⃣ Eski SDK → openUrl ile Warpcast compose ekranı
+              // 2️⃣ Eski SDK
               else if (sdkRef?.openUrl) {
-                console.log("🔹 Using sdk.openUrl fallback");
+                console.log("🔹 Using openUrl");
                 await sdkRef.openUrl({ url: warpcastWebUrl });
               }
-              // 3️⃣ Normal web → direkt warpcast.com composer
+              // 3️⃣ Normal browser
               else {
-                console.log("🌐 No SDK — redirecting to web composer");
+                console.log("🌐 Opening Warpcast Web Composer");
                 const opened = window.open(warpcastWebUrl, "_blank");
-                if (!opened) {
-                  window.location.href = warpcastWebUrl;
-                }
+                if (!opened) window.location.href = warpcastWebUrl;
               }
 
-              // 🎁 Bonus puan + backend update
+              // 🎁 BONUS
               const bonus = 20;
               setScore(score + bonus);
 
@@ -549,14 +554,21 @@ export default function SolitaireGame({
                 });
               }
 
-              shareBtn.textContent = "✅ Shared! (+20)";
-              shareBtn.style.opacity = "0.8";
-              if (confirmDiv)
-                confirmDiv.innerHTML += `<br>🎁 +${bonus} bonus for sharing!`;
+              // UI feedback
+              shareBtn.textContent = "✅ Shared! (+20 bonus)";
+              shareBtn.style.opacity = "0.7";
+
+              // ⭐ WIN MODAL OTOMATİK KAPAT
+              const winModal = document.getElementById("win-modal");
+              if (winModal) winModal.classList.remove("visible");
+
+              // ⭐ OYUNU OTOMATİK YENİDEN BAŞLAT
+              const newGameBtn = document.querySelector(".new-game-btn") as HTMLElement | null;
+              if (newGameBtn) newGameBtn.click();
 
             } catch (err) {
               console.error("❌ Share failed:", err);
-              alert("❌ Failed to share cast. Try again!");
+              alert("❌ Failed to share cast.");
             }
           });
         } catch (err) {
@@ -739,57 +751,6 @@ export default function SolitaireGame({
       });
     }
 
-// ==============================
-// 🧪 TEST FARCASTER SHARE BUTTON
-// ==============================
-    try {
-      const testBtn = document.getElementById("test-farcaster-share");
-      if (testBtn && !(testBtn as any)._bound) {
-        (testBtn as any)._bound = true;
-
-        testBtn.addEventListener("click", async () => {
-          try {
-            const sdkRef = (window as any).sdk || (window as any).farcaster;
-
-            const text = "🧪 Test share from Solitaire MiniApp — no game played.";
-            const url = `https://warpcast.com/~/compose?text=${encodeURIComponent(text)}`;
-
-            // 1) MiniApp (Warpcast içinde)
-            if (sdkRef?.actions?.composeCast) {
-              console.log("🔹 Using composeCast()");
-              const result = await sdkRef.actions.composeCast({
-                text,
-                embeds: ["https://solitaire-frame.vercel.app"],
-              });
-              if (result?.cast) {
-                alert("✅ Test cast successfully created!");
-              } else {
-                alert("❌ Cast cancelled or failed.");
-              }
-              return;
-            }
-
-            // 2) Old Webview fallback
-            if (sdkRef?.openUrl) {
-              console.log("🔹 Using openUrl()");
-              await sdkRef.openUrl({ url });
-              return;
-            }
-
-            // 3) Normal web browser
-            console.log("🌐 No SDK — opening Warpcast composer page");
-            const opened = window.open(url, "_blank");
-            if (!opened) window.location.href = url;
-
-          } catch (err) {
-            console.error("Test share error:", err);
-            alert("❌ Test share failed — check console.");
-          }
-        });
-      }
-    } catch (err) {
-      console.error("❌ Could not initialize test share button", err);
-    }
 
     // --- TOUCH BINDER ---
     function attachTouchHandlers() {
@@ -874,23 +835,6 @@ export default function SolitaireGame({
 
   return (
       <>
-          {/* 🧪 TEST FARCASTER SHARE BUTTON */}
-          <button
-              id="test-farcaster-share"
-              className="control-btn"
-              style={{
-                position: "absolute",
-                top: "15px",
-                right: "20px",
-                zIndex: 9999,
-                background: "#6a5acd",
-                color: "white",
-                padding: "8px 14px",
-                borderRadius: "8px",
-              }}
-          >
-            🧪 Test Farcaster Share
-          </button>
         <div className="game-container" id="game-container">
           <h1>Solitaire</h1>
           <div className="score-display">Score: 0</div>
