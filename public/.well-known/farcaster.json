@@ -1,4 +1,29 @@
 {
+  "app": {
+    "name": "Solitaire",
+    "version": "1.0.0",
+    "url": "https://solitaire-frame.vercel.app",
+    "description": "Play Solitaire onchain, record your wins, and share them on Farcaster!",
+    "icon": "https://solitaire-frame.vercel.app/icon.png",
+    "splash": {
+      "image": "https://solitaire-frame.vercel.app/splash.png",
+      "background": "#08401B"
+    },
+    "screenshots": [
+      "https://solitaire-frame.vercel.app/embed-1200x800.png"
+    ],
+    "categories": ["games", "onchain"],
+    "tags": ["solitaire", "cards", "farcaster", "base"],
+    "permissions": {
+      "wallet": true,
+      "casts": true
+    },
+    "developer": {
+      "name": "Arcitotti",
+      "url": "https://solitaire-frame.vercel.app"
+    }
+  },
+
   "frame": {
     "name": "Solitaire",
     "version": "1",
@@ -9,8 +34,8 @@
     "splashImageUrl": "https://solitaire-frame.vercel.app/splash.png",
     "splashBackgroundColor": "#08401B",
     "webhookUrl": "https://solitaire-frame.vercel.app/api/webhook",
-    "subtitle": "Play Solitaire on Farcaster!\"",
-    "description": "Challenge yourself with the timeless Solitaire game. just fun!",
+    "subtitle": "Play Solitaire on Farcaster!",
+    "description": "Challenge yourself with the timeless Solitaire game — now with onchain scores and sharing.",
     "screenshotUrls": [
       "https://solitaire-frame.vercel.app/embed-1200x800.png"
     ],
@@ -25,6 +50,7 @@
     "tagline": "Play classic Solitaire",
     "ogImageUrl": "https://solitaire-frame.vercel.app/preview.png"
   },
+
   "accountAssociation": {
     "header": "eyJmaWQiOjMzMTM1MiwidHlwZSI6ImF1dGgiLCJrZXkiOiIweDI1NmQ2OTkyQkUwRDY5NTZlYTg0MTk4RDYxQTE3MDc1NjcxNTgzNzcifQ",
     "payload": "eyJkb21haW4iOiJzb2xpdGFpcmUtZnJhbWUudmVyY2VsLmFwcCJ9",
