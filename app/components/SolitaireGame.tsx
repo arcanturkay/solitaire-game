@@ -752,35 +752,6 @@ export default function SolitaireGame({
       });
     }
 
-// ---- Farcaster SDK TEST BUTTON ----
-    (function addSdkTestButton() {
-      const container = document.querySelector(".controls");
-      if (!container) return;
-
-      // buton daha önce eklenmişse tekrar ekleme
-      if (document.getElementById("sdk-test-btn")) return;
-
-      const sdkTestBtn = document.createElement("button");
-      sdkTestBtn.id = "sdk-test-btn";
-      sdkTestBtn.className = "control-btn alt";
-      sdkTestBtn.style.marginLeft = "10px";
-      sdkTestBtn.textContent = "🔍 Test Farcaster SDK";
-
-      container.appendChild(sdkTestBtn);
-
-      sdkTestBtn.addEventListener("click", () => {
-        console.log("======== 🚀 FARCASTER SDK TEST ========");
-        console.log("window.sdk:", (window as any).sdk);
-        console.log("sdk?.actions:", (window as any).sdk?.actions);
-        console.log("sdk?.actions?.openCastComposer:", (window as any).sdk?.actions?.openCastComposer);
-        console.log("sdk?.wallet:", (window as any).sdk?.wallet);
-        console.log("navigator.userAgent:", navigator.userAgent);
-        console.log("=======================================");
-
-        alert("SDK test logları console'da! (Mini app içinden bak)");
-      });
-    })();
-
 
     // --- TOUCH BINDER ---
     function attachTouchHandlers() {
