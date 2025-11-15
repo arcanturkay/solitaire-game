@@ -480,7 +480,7 @@ export default function SolitaireGame({
         }
 
 /// ==================================================
-// 🌀 SHARE ON FARCASTER (BONUS +20, AUTO CLOSE, NEW GAME)
+// 🌀 SHARE ON FARCASTER (BONUS +20, AUTO CLOSE, NEW GAME, TX LINK, DYNAMIC MSG)
 // ==================================================
         try {
           const sdkRef = (window as any).sdk || (window as any).farcaster;
@@ -498,22 +498,47 @@ export default function SolitaireGame({
 
           shareBtn.addEventListener("click", async () => {
             try {
-              // 🔹 Kullanıcı adı varsa cast içine ekle
+              //
+              // ⭐ 1) Kullanıcı adı
+              //
               const username = sdkRef?.context?.user?.username
                   ? `@${sdkRef.context.user.username}`
                   : "a player";
 
+              //
+              // ⭐ 2) Dinamik skor yorumu
+              //
+              let scoreComment = "";
+              if (score >= 150) scoreComment = "🔥 Insane run!";
+              else if (score >= 130) scoreComment = "⚡ Cracked performance!";
+              else if (score >= 100) scoreComment = "💫 Smooth win!";
+              else scoreComment = "🎮 Nice clean run!";
+
+              //
+              // ⭐ 3) TX linki (txHash değişkenin zaten kodunda geliyor)
+              //
+              const txLink = txHash
+                  ? `\n🧾 On-chain score: https://basescan.org/tx/${txHash}\n`
+                  : "\n";
+
+              //
+              // ⭐ 4) Final Cast Metni
+              //
               const tracking = "solitaire_share_v1";
 
               const text =
-                  `🎮 ${username} just won Solitaire on Base!\n` +
-                  `🧩 Score: ${score} pts\n\n` +
-                  `Play & compete 👇\n` +
+                  `🎮 ${username} just cleared a Solitaire run on Farcaster!\n` +
+                  `🍀 Score: ${score} pts — ${scoreComment}\n` +
+                  `🎁 +20 bonus earned for casting it on-chain.\n` +
+                  txLink +
+                  `\nTry it & climb the leaderboard 👇\n` +
                   `https://solitaire-frame.vercel.app?ref=${tracking}`;
 
               const warpcastWebUrl = `https://warpcast.com/~/compose?text=${encodeURIComponent(text)}`;
 
-              // 1️⃣ Mini App içi — composeCast
+              //
+              // ⭐ 5) MiniApp içinde cast composer
+              //
               if (sdkRef?.actions?.composeCast) {
                 console.log("🔹 Using composeCast");
                 const result = await sdkRef.actions.composeCast({
@@ -526,19 +551,25 @@ export default function SolitaireGame({
                   return;
                 }
               }
-              // 2️⃣ Eski SDK
+                  //
+                  // ⭐ 6) Eski SDK fallback
+              //
               else if (sdkRef?.openUrl) {
                 console.log("🔹 Using openUrl");
                 await sdkRef.openUrl({ url: warpcastWebUrl });
               }
-              // 3️⃣ Normal browser
+                  //
+                  // ⭐ 7) Normal browser fallback
+              //
               else {
                 console.log("🌐 Opening Warpcast Web Composer");
                 const opened = window.open(warpcastWebUrl, "_blank");
                 if (!opened) window.location.href = warpcastWebUrl;
               }
 
-              // 🎁 BONUS
+              //
+              // ⭐ 8) BONUS +20 kaydet
+              //
               const bonus = 20;
               setScore(score + bonus);
 
@@ -554,15 +585,18 @@ export default function SolitaireGame({
                 });
               }
 
-              // UI feedback
+              //
+              // ⭐ 9) UI feedback
+              //
               shareBtn.textContent = "✅ Shared! (+20 bonus)";
               shareBtn.style.opacity = "0.7";
 
-              // ⭐ WIN MODAL OTOMATİK KAPAT
+              //
+              // ⭐ 10) Win Modal kapat + yeni oyunu başlat
+              //
               const winModal = document.getElementById("win-modal");
               if (winModal) winModal.classList.remove("visible");
 
-              // ⭐ OYUNU OTOMATİK YENİDEN BAŞLAT
               const newGameBtn = document.querySelector(".new-game-btn") as HTMLElement | null;
               if (newGameBtn) newGameBtn.click();
 
