@@ -503,7 +503,7 @@ export default function SolitaireGame({
               //
               const username = sdkRef?.context?.user?.username
                   ? `@${sdkRef.context.user.username}`
-                  : "a player";
+                  : "I";
 
               //
               // ⭐ 2) Dinamik skor yorumu
@@ -527,7 +527,7 @@ export default function SolitaireGame({
               const tracking = "solitaire_share_v1";
 
               const text =
-                  `🎮 ${username} just cleared a Solitaire run on Farcaster!\n` +
+                  `♦️ ♥️ ♠️ ♣️ ${username} just cleared a Solitaire run on Farcaster!\n` +
                   `🍀 Score: ${score} pts — ${scoreComment}\n` +
                   `🎁 +20 bonus earned for casting it on-chain.\n` +
                   txLink +
