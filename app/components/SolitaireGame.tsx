@@ -480,7 +480,7 @@ export default function SolitaireGame({
         }
 
 // ==================================================
-// 🌀 SHARE — FINAL WORKING COMPOSER (NO MORE @compose BUG)
+// 🌀 FINAL WORKING SHARE FOR MOBILE + WEB
 // ==================================================
         try {
           const sdkRef = (window as any).sdk || (window as any).farcaster;
@@ -492,8 +492,6 @@ export default function SolitaireGame({
 
             shareBtn.addEventListener("click", async () => {
               try {
-                alert("Sharing…");
-
                 const username = sdkRef?.context?.user?.username
                     ? `@${sdkRef.context.user.username}`
                     : "I";
@@ -515,42 +513,25 @@ export default function SolitaireGame({
                     `\nPlay it 👇\n` +
                     `https://farcaster.xyz/miniapps/-2zKveTkHy61/solitaire`;
 
-                // 🟣 DOĞRU DEEP LINK — iOS/Android guaranteed
-                const deepComposer =
-                    "warpcast://~/compose?text=" + encodeURIComponent(castText);
+                // 🚀 TEK ÇALIŞAN DEEP LINK (Resmi)
+                const composerUrl =
+                    "farcaster://casts/add?text=" + encodeURIComponent(castText);
 
-                // 1) Mini App'i kapat
-                try {
-                  await sdkRef?.close();
-                } catch (e) {}
+                // ⭐ Mini App kapanmadan deep link tetikle
+                window.location.href = composerUrl;
 
-                // 2) 250ms sonra composer'a yönlendir
+                // ⭐ Mini app'i sonradan kapat
                 setTimeout(() => {
-                  window.location.href = deepComposer;
-                }, 250);
+                  sdkRef?.close?.();
+                }, 400);
 
-                // 3) iOS fallback — invisible iframe
-                setTimeout(() => {
-                  const iframe = document.createElement("iframe");
-                  iframe.style.display = "none";
-                  iframe.src = deepComposer;
-                  document.body.appendChild(iframe);
-                  setTimeout(() => iframe.remove(), 2000);
-                }, 600);
-
-                // 4) Son fallback
-                setTimeout(() => {
-                  window.location.assign(deepComposer);
-                }, 1200);
-
-              } catch (err: any) {
+              } catch (err) {
                 alert("❌ ERROR: " + err?.message);
               }
             });
           }
-
         } catch (err) {
-          console.error("💥 Share init failed:", err);
+          console.error("💥 Farcaster share init failed:", err);
         }
 
       } catch (err: any) {
