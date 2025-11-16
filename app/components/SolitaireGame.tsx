@@ -727,6 +727,40 @@ export default function SolitaireGame({
         }
       });
     }
+// ==================================================
+// 🧪 SAFARI BRIDGE COMPOSER (Guaranteed Working)
+// ==================================================
+    try {
+      const sdkRef = (window as any).sdk || (window as any).farcaster;
+
+      const testBtn = document.getElementById("test-share-btn");
+      if (testBtn && !(testBtn as any)._bound) {
+
+        (testBtn as any)._bound = true;
+
+        testBtn.addEventListener("click", async () => {
+          try {
+            alert("TEST: Closing Mini App…");
+
+            // 1️⃣ Mini App'ten çık
+            await sdkRef?.close();
+
+            // 2️⃣ Safari açılınca composer'a yönlendir
+            setTimeout(() => {
+              const deep = "farcaster://compose?text=" +
+                  encodeURIComponent("🧪 Test cast — Safari bridge working!");
+
+              window.location.href = deep;
+            }, 800); // 600–900ms ideal
+
+          } catch (err: any) {
+            alert("ERROR: " + err?.message);
+          }
+        });
+      }
+    } catch (err) {
+      console.error("💥 Test share init failed:", err);
+    }
 
     // --- TOUCH BINDER ---
     function attachTouchHandlers() {
@@ -811,6 +845,9 @@ export default function SolitaireGame({
 
   return (
       <>
+        <button id="test-share-btn" className="control-btn">
+          🧪 Test Share
+        </button>
         <div className="game-container" id="game-container">
           <h1>Solitaire</h1>
           <div className="score-display">Score: 0</div>
