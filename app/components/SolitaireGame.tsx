@@ -480,76 +480,61 @@ export default function SolitaireGame({
         }
 
 // ==================================================
-// 🌀 HYBRID FARCASTER SHARE (MOBILE + DESKTOP SAFE)
+// 🌀 SHARE ON FARCASTER — FIXED (REAL COMPOSER LINK)
 // ==================================================
         try {
+          const sdkRef = (window as any).sdk || (window as any).farcaster;
+
           const shareBtn = document.getElementById("share-on-farcaster-btn");
-          if (!shareBtn || (shareBtn as any)._bound) return;
+          if (shareBtn && !(shareBtn as any)._bound) {
 
-          (shareBtn as any)._bound = true;
+            (shareBtn as any)._bound = true;
 
-          shareBtn.addEventListener("click", async () => {
-            try {
-              // =============================
-              // 1) CAST TEXT
-              // =============================
-              const text =
-                  `♦️ ♥️ ♠️ ♣️ I just cleared a Solitaire run on Farcaster!\n` +
-                  `Score: ${score} pts 🎯\n\n` +
-                  `Play: https://farcaster.xyz/miniapps/-2zKveTkHy61/solitaire`;
+            shareBtn.addEventListener("click", async () => {
+              try {
+                alert("Sharing…");
 
-              // =============================
-              // 2) URL’ler
-              // =============================
-              const deepLink = "farcaster://compose?text=" + encodeURIComponent(text);
-              const webComposer =
-                  "https://warpcast.com/~/compose?text=" + encodeURIComponent(text);
+                const username = sdkRef?.context?.user?.username
+                    ? `@${sdkRef.context.user.username}`
+                    : "I";
 
-              // =============================
-              // 3) PLATFORM TESPITI
-              // =============================
-              const ua = navigator.userAgent.toLowerCase();
-              const isMobile = /iphone|ipad|ipod|android/.test(ua);
+                let scoreComment = "";
+                if (score >= 150) scoreComment = "🔥 Insane run!";
+                else if (score >= 130) scoreComment = "⚡ Cracked performance!";
+                else if (score >= 100) scoreComment = "💫 Smooth win!";
+                else scoreComment = "🎮 Nice clean run!";
 
-              // =============================
-              // 4) EXECUTION LOGIC
-              // =============================
-              if (isMobile) {
-                // 🔥 MOBILE: ALWAYS DEEP LINK (Mini App %100 çalışır)
-                window.location.href = deepLink;
-              } else {
-                // 💻 DESKTOP: NORMAL WEB COMPOSER
-                const opened = window.open(webComposer, "_blank");
-                if (!opened) window.location.href = webComposer;
+                const txLink = txHash
+                    ? `\n🧾 On-chain score: https://basescan.org/tx/${txHash}\n`
+                    : "\n";
+
+                const castText =
+                    `♦️ ♥️ ♠️ ♣️  ${username} just cleared a Solitaire run!\n` +
+                    `🍀 Score: ${score} pts — ${scoreComment}\n` +
+                    txLink +
+                    `\nPlay it 👇\n` +
+                    `https://farcaster.xyz/miniapps/-2zKveTkHy61/solitaire`;
+
+                // 🚀 Doğru Composer URL (BU ÇALIŞIR)
+                const deepComposer =
+                    "farcaster://casts/compose?text=" + encodeURIComponent(castText);
+
+                // Mini App'ten çık
+                await sdkRef?.close();
+
+                // 800ms sonra composera yönlendir
+                setTimeout(() => {
+                  window.location.href = deepComposer;
+                }, 800);
+
+              } catch (err: any) {
+                alert("❌ ERROR: " + err?.message);
               }
+            });
+          }
 
-              // =============================
-              // 5) BONUS +20
-              // =============================
-              const bonus = 20;
-              setScore(score + bonus);
-
-              if (toAddr) {
-                await fetch("/api/addscore", {
-                  method: "POST",
-                  headers: { "Content-Type": "application/json" },
-                  body: JSON.stringify({
-                    playerAddress: toAddr,
-                    bonus,
-                    reason: "shared_on_farcaster",
-                  }),
-                });
-              }
-
-              shareBtn.textContent = "✅ Shared! (+20 bonus)";
-              shareBtn.style.opacity = "0.7";
-            } catch (err: any) {
-              alert("❌ ERROR: " + err?.message);
-              console.error("Share failed:", err);
-            }
-          });
         } catch (err) {
-          console.error("💥 Share init failed:", err);
+          console.error("💥 Farcaster share init failed:", err);
         }
 
       } catch (err: any) {
@@ -727,40 +712,7 @@ export default function SolitaireGame({
         }
       });
     }
-// ==================================================
-// 🧪 SAFARI BRIDGE COMPOSER (Guaranteed Working)
-// ==================================================
-    try {
-      const sdkRef = (window as any).sdk || (window as any).farcaster;
 
-      const testBtn = document.getElementById("test-share-btn");
-      if (testBtn && !(testBtn as any)._bound) {
-
-        (testBtn as any)._bound = true;
-
-        testBtn.addEventListener("click", async () => {
-          try {
-            alert("TEST: Closing Mini App…");
-
-            // 1️⃣ Mini App'ten çık
-            await sdkRef?.close();
-
-            // 2️⃣ Safari açılınca composer'a yönlendir
-            setTimeout(() => {
-              const deep = "farcaster://compose?text=" +
-                  encodeURIComponent("🧪 Test cast — Safari bridge working!");
-
-              window.location.href = deep;
-            }, 800); // 600–900ms ideal
-
-          } catch (err: any) {
-            alert("ERROR: " + err?.message);
-          }
-        });
-      }
-    } catch (err) {
-      console.error("💥 Test share init failed:", err);
-    }
 
     // --- TOUCH BINDER ---
     function attachTouchHandlers() {
@@ -771,7 +723,6 @@ export default function SolitaireGame({
         ph.addEventListener('touchend', () => selectOrMoveCard(ph as HTMLElement));
         ph.addEventListener('click', () => selectOrMoveCard(ph as HTMLElement));
       });
-
       // kartlara tık/touch
       document.querySelectorAll('.card').forEach((c) => {
         if ((c as any)._touchBound) return;
