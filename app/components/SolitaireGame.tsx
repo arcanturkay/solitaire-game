@@ -480,70 +480,52 @@ export default function SolitaireGame({
         }
 
 // ==================================================
-// 🌀 SHARE ON FARCASTER — MOBILE DEEP LINK + WEB COMPOSER
+// 🌀 HYBRID FARCASTER SHARE (MOBILE + DESKTOP SAFE)
 // ==================================================
         try {
-          const sdkRef = (window as any).sdk || (window as any).farcaster;
-
-          const shareBtn = document.getElementById("share-on-farcaster-btn") as HTMLButtonElement | null;
+          const shareBtn = document.getElementById("share-on-farcaster-btn");
           if (!shareBtn || (shareBtn as any)._bound) return;
-          (shareBtn as any)._bound = true;
 
-          shareBtn.style.pointerEvents = "auto";
-          shareBtn.disabled = false;
+          (shareBtn as any)._bound = true;
 
           shareBtn.addEventListener("click", async () => {
             try {
-              alert("Opening Farcaster composer…");
-
-              // =============== USERNAME ==================
-              const username = sdkRef?.context?.user?.username
-                  ? `@${sdkRef.context.user.username}`
-                  : "I";
-
-              // =============== SCORE COMMENT ============
-              let scoreComment = "";
-              if (score >= 150) scoreComment = "🔥 Insane run!";
-              else if (score >= 130) scoreComment = "⚡ Cracked performance!";
-              else if (score >= 100) scoreComment = "💫 Smooth win!";
-              else scoreComment = "🎮 Nice clean run!";
-
-              // =============== TX LINK ===================
-              const txLink = txHash
-                  ? `\n🧾 https://basescan.org/tx/${txHash}\n`
-                  : "\n";
-
-              // =============== FINAL CAST TEXT ===========
+              // =============================
+              // 1) CAST TEXT
+              // =============================
               const text =
-                  `♦️ ♥️ ♠️ ♣️ ${username} just cleared a Solitaire run!\n` +
-                  `🍀 Score: ${score} pts — ${scoreComment}\n` +
-                  txLink +
-                  `Play & compete 👇\n` +
-                  `https://farcaster.xyz/miniapps/-2zKveTkHy61/solitaire`;
+                  `♦️ ♥️ ♠️ ♣️ I just cleared a Solitaire run on Farcaster!\n` +
+                  `Score: ${score} pts 🎯\n\n` +
+                  `Play: https://farcaster.xyz/miniapps/-2zKveTkHy61/solitaire`;
 
-              // =============== URLs ======================
-              const webComposerUrl =
+              // =============================
+              // 2) URL’ler
+              // =============================
+              const deepLink = "farcaster://compose?text=" + encodeURIComponent(text);
+              const webComposer =
                   "https://warpcast.com/~/compose?text=" + encodeURIComponent(text);
 
-              const mobileDeepLink =
-                  "farcaster://compose?text=" + encodeURIComponent(text);
+              // =============================
+              // 3) PLATFORM TESPITI
+              // =============================
+              const ua = navigator.userAgent.toLowerCase();
+              const isMobile = /iphone|ipad|ipod|android/.test(ua);
 
-              // =============== ENVIRONMENT CHECK ==========
-              const isMobileMiniApp =
-                  navigator.userAgent.includes("Warpcast") ||
-                  sdkRef?.platform === "ios" ||
-                  sdkRef?.platform === "android";
-
-              // 🔥 MOBILE MINI APP → USE DEEP LINK (100% WORKS)
-              if (isMobileMiniApp) {
-                window.location.href = mobileDeepLink;
+              // =============================
+              // 4) EXECUTION LOGIC
+              // =============================
+              if (isMobile) {
+                // 🔥 MOBILE: ALWAYS DEEP LINK (Mini App %100 çalışır)
+                window.location.href = deepLink;
               } else {
-                // 💻 WEB DESKTOP → warpcast.com composer
-                const opened = window.open(webComposerUrl, "_blank");
-                if (!opened) window.location.href = webComposerUrl;
+                // 💻 DESKTOP: NORMAL WEB COMPOSER
+                const opened = window.open(webComposer, "_blank");
+                if (!opened) window.location.href = webComposer;
               }
 
-              // 🎁 BONUS + UPDATE UI
+              // =============================
+              // 5) BONUS +20
+              // =============================
               const bonus = 20;
               setScore(score + bonus);
 
@@ -559,17 +541,15 @@ export default function SolitaireGame({
                 });
               }
 
-              shareBtn.textContent = "✅ Shared! (+20)";
+              shareBtn.textContent = "✅ Shared! (+20 bonus)";
               shareBtn.style.opacity = "0.7";
-
             } catch (err: any) {
               alert("❌ ERROR: " + err?.message);
               console.error("Share failed:", err);
             }
           });
-
         } catch (err) {
-          console.error("💥 Farcaster share init failed:", err);
+          console.error("💥 Share init failed:", err);
         }
 
       } catch (err: any) {
