@@ -480,7 +480,7 @@ export default function SolitaireGame({
         }
 
 // ==================================================
-// 🌀 SHARE ON FARCASTER (MOBILE SAFE + WEB FULL MODE)
+// 🌀 SHARE ON FARCASTER (DEBUG + MOBILE SAFE + WEB FULL)
 // ==================================================
         try {
           const sdkRef = (window as any).sdk || (window as any).farcaster;
@@ -496,8 +496,24 @@ export default function SolitaireGame({
 
           shareBtn.addEventListener("click", async () => {
             try {
+              // 🔥 STEP 1
+              alert("STEP 1: SHARE CLICKED");
+
               const isMiniApp = !!(sdkRef?.actions?.composeCast);
-              console.log("📱 MiniApp environment:", isMiniApp);
+
+              // 🔥 STEP 2 — SDK DURUMU
+              alert(
+                  "STEP 2: sdkRef = " +
+                  JSON.stringify({
+                    hasSdk: !!sdkRef,
+                    hasActions: !!sdkRef?.actions,
+                    hasComposeCast: !!sdkRef?.actions?.composeCast,
+                    hasOpenUrl: !!sdkRef?.openUrl
+                  })
+              );
+
+              // 🔥 STEP 3 — MiniApp kontrolü
+              alert("STEP 3: isMiniApp = " + isMiniApp);
 
               // ================ USERNAME =================
               const username = sdkRef?.context?.user?.username
@@ -519,7 +535,7 @@ export default function SolitaireGame({
               const tracking = "solitaire_share_v1";
 
               // ==================================================
-              // 📱 MOBILE MINI APP SAFE MODE (NO EMBEDS)
+              // 📱 MOBILE MINIAPP SAFE
               // ==================================================
               const mobileText =
                   `${username} just cleared a Solitaire run on Farcaster!\n` +
@@ -528,7 +544,7 @@ export default function SolitaireGame({
                   `https://solitaire-frame.vercel.app?ref=${tracking}`;
 
               // ==================================================
-              // 💻 WEB — FULL RICH MODE w/ ICONS + EMBEDS
+              // 💻 WEB – RICH MODE
               // ==================================================
               const webText =
                   `♦️ ♥️ ♠️ ♣️  ${username} just cleared a Solitaire run on Farcaster!\n` +
@@ -539,29 +555,32 @@ export default function SolitaireGame({
                   `https://solitaire-frame.vercel.app?ref=${tracking}`;
 
               // ==================================================
-              // 🚀 EXECUTION LOGIC
+              // 🚀 EXECUTION — MINI APP MI, WEB Mİ?
               // ==================================================
 
               if (isMiniApp) {
-                console.log("📱 Using composeCast — MOBILE SAFE MODE");
+                alert("STEP 4: Calling composeCast()");
 
                 const result = await sdkRef.actions.composeCast({
-                  text: mobileText,   // 🚨 embed yok → crash fix
+                  text: mobileText
                 });
 
+                alert("STEP 5: composeCast RESULT = " + JSON.stringify(result));
+
                 if (!result?.cast) {
-                  console.log("User canceled cast");
+                  alert("STEP 6: composeCast: no cast returned");
                   return;
                 }
 
               } else {
-                console.log("💻 Using web fallback — OPEN COMPOSER");
+                alert("STEP 4: NO MiniApp → Using openUrl fallback");
 
                 const url =
                     "https://warpcast.com/~/compose?text=" + encodeURIComponent(webText);
 
-                const opened = window.open(url, "_blank");
-                if (!opened) window.location.href = url;
+                const r = await sdkRef?.openUrl?.({ url });
+
+                alert("STEP 5: openUrl RESULT = " + JSON.stringify(r));
               }
 
               // ==================================================
@@ -577,8 +596,8 @@ export default function SolitaireGame({
                   body: JSON.stringify({
                     playerAddress: toAddr,
                     bonus,
-                    reason: "shared_on_farcaster",
-                  }),
+                    reason: "shared_on_farcaster"
+                  })
                 });
               }
 
@@ -594,14 +613,16 @@ export default function SolitaireGame({
               const newGameBtn = document.querySelector(".new-game-btn") as HTMLElement | null;
               if (newGameBtn) newGameBtn.click();
 
-            } catch (err) {
+            } catch (err: any) {
+              alert("❌ ERROR: " + err?.message);
               console.error("❌ Share failed:", err);
-              alert("❌ Failed to share cast.");
             }
           });
+
         } catch (err) {
           console.error("💥 Farcaster share init failed:", err);
         }
+
 
       } catch (err: any) {
         console.error("❌ recordMyWin failed:", err);
