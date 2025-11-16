@@ -832,6 +832,7 @@ export default function SolitaireGame({
     // web ortamında hata verirse sessiz geç
   }
 
+  
   return (
       <>
         <button
