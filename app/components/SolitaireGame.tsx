@@ -480,7 +480,7 @@ export default function SolitaireGame({
         }
 
 // ==================================================
-// 🌀 SHARE ON FARCASTER — UNIVERSAL MODE (WORKS EVERYWHERE)
+// 🌀 SHARE ON FARCASTER — FORCE REDIRECT MODE (WORKS ON iOS)
 // ==================================================
         try {
           const sdkRef = (window as any).sdk || (window as any).farcaster;
@@ -494,48 +494,40 @@ export default function SolitaireGame({
 
           shareBtn.addEventListener("click", async () => {
             try {
-              alert("Sharing…");
+              alert("Opening cast composer…");
 
-              // ================ USERNAME =================
+              // USERNAME
               const username = sdkRef?.context?.user?.username
                   ? `@${sdkRef.context.user.username}`
                   : "I";
 
-              // ================ SCORE COMMENT ============
+              // SCORE COMMENT
               let scoreComment = "";
               if (score >= 150) scoreComment = "🔥 Insane run!";
               else if (score >= 130) scoreComment = "⚡ Cracked performance!";
               else if (score >= 100) scoreComment = "💫 Smooth win!";
               else scoreComment = "🎮 Nice clean run!";
 
-              // ================ TX LINK ==================
+              // TX LINK
               const txLink = txHash
-                  ? `\n🧾 On-chain score: https://basescan.org/tx/${txHash}\n`
+                  ? `\n🧾 https://basescan.org/tx/${txHash}\n`
                   : "\n";
 
+              // CAST TEXT
               const text =
-                  `♦️ ♥️ ♠️ ♣️  ${username} just cleared a Solitaire run on Farcaster!\n` +
+                  `♦️ ♥️ ♠️ ♣️ ${username} just cleared a Solitaire run on Farcaster!\n` +
                   `🍀 Score: ${score} pts — ${scoreComment}\n` +
                   txLink +
                   `\nPlay & compete 👇\n` +
                   `https://farcaster.xyz/miniapps/-2zKveTkHy61/solitaire`;
 
-              // ==================================================
-              // ALWAYS USE WEB COMPOSER (BEST FOR MOBILE)
-              // ==================================================
               const composeUrl =
                   "https://warpcast.com/~/compose?text=" + encodeURIComponent(text);
 
-              // ⭐ 1️⃣ Eğer openUrl varsa → bunu kullan
-              if (sdkRef?.openUrl) {
-                await sdkRef.openUrl({ url: composeUrl });
-              } else {
-                // ⭐ 2️⃣ fallback → yeni sekme
-                const opened = window.open(composeUrl, "_blank");
-                if (!opened) window.location.href = composeUrl;
-              }
+              // 🔥 FORCE REDIRECT (iOS’ta %100 çalışıyor)
+              window.location.href = composeUrl;
 
-              // 🎁 BONUS + UI
+              // BONUS
               const bonus = 20;
               setScore(score + bonus);
 
@@ -554,7 +546,6 @@ export default function SolitaireGame({
               shareBtn.textContent = "✅ Shared! (+20)";
               shareBtn.style.opacity = "0.7";
 
-              alert("Shared!");
             } catch (err: any) {
               alert("❌ ERROR: " + err?.message);
             }
