@@ -710,6 +710,47 @@ export default function SolitaireGame({
       });
     }
 
+// ==================================================
+// 🧪 TEST BUTTON — DIRECT CAST COMPOSER (NO DM BUG)
+// ==================================================
+    try {
+      const sdkRef = (window as any).sdk || (window as any).farcaster;
+
+      const btn = document.getElementById("test-cast-btn");
+      if (btn && !(btn as any)._bound) {
+
+        (btn as any)._bound = true;
+
+        btn.addEventListener("click", async () => {
+          try {
+
+            alert("Opening Cast Composer…");
+
+            // Cast içine yazılacak örnek text
+            const testText =
+                "🧪 Test cast from Solitaire MiniApp!\n" +
+                "If you see this, it correctly opened the CAST composer.";
+
+            // ✔ TEK GARANTİLİ CAST COMPOSER DEEP LINK
+            const deepLink =
+                "farcaster://casts/add?text=" + encodeURIComponent(testText);
+
+            // ⭐ Deep linki TETİKLE
+            window.location.href = deepLink;
+
+            // ⭐ MiniApp'i arkadan kapat (opsiyonel ama daha stabil)
+            setTimeout(() => {
+              sdkRef?.close?.();
+            }, 500);
+
+          } catch (err) {
+            alert("❌ ERROR: " + err?.message);
+          }
+        });
+      }
+    } catch (err) {
+      console.error("💥 Test cast init failed:", err);
+    }
 
     // --- TOUCH BINDER ---
     function attachTouchHandlers() {
@@ -793,8 +834,18 @@ export default function SolitaireGame({
 
   return (
       <>
-        <button id="test-share-btn" className="control-btn">
-          🧪 Test Share
+        <button
+            id="test-cast-btn"
+            style={{
+              padding: "12px",
+              background: "#5a3efc",
+              color: "white",
+              borderRadius: "8px",
+              fontSize: "16px",
+              marginBottom: "12px",
+            }}
+        >
+          Test Cast
         </button>
         <div className="game-container" id="game-container">
           <h1>Solitaire</h1>
