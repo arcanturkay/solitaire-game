@@ -480,7 +480,7 @@ export default function SolitaireGame({
         }
 
 // ==================================================
-// 🌀 SHARE ON FARCASTER — FORCE REDIRECT MODE (WORKS ON iOS)
+// 🌀 SHARE ON FARCASTER — MOBILE DEEP LINK + WEB COMPOSER
 // ==================================================
         try {
           const sdkRef = (window as any).sdk || (window as any).farcaster;
@@ -494,40 +494,56 @@ export default function SolitaireGame({
 
           shareBtn.addEventListener("click", async () => {
             try {
-              alert("Opening cast composer…");
+              alert("Opening Farcaster composer…");
 
-              // USERNAME
+              // =============== USERNAME ==================
               const username = sdkRef?.context?.user?.username
                   ? `@${sdkRef.context.user.username}`
                   : "I";
 
-              // SCORE COMMENT
+              // =============== SCORE COMMENT ============
               let scoreComment = "";
               if (score >= 150) scoreComment = "🔥 Insane run!";
               else if (score >= 130) scoreComment = "⚡ Cracked performance!";
               else if (score >= 100) scoreComment = "💫 Smooth win!";
               else scoreComment = "🎮 Nice clean run!";
 
-              // TX LINK
+              // =============== TX LINK ===================
               const txLink = txHash
                   ? `\n🧾 https://basescan.org/tx/${txHash}\n`
                   : "\n";
 
-              // CAST TEXT
+              // =============== FINAL CAST TEXT ===========
               const text =
-                  `♦️ ♥️ ♠️ ♣️ ${username} just cleared a Solitaire run on Farcaster!\n` +
+                  `♦️ ♥️ ♠️ ♣️ ${username} just cleared a Solitaire run!\n` +
                   `🍀 Score: ${score} pts — ${scoreComment}\n` +
                   txLink +
-                  `\nPlay & compete 👇\n` +
+                  `Play & compete 👇\n` +
                   `https://farcaster.xyz/miniapps/-2zKveTkHy61/solitaire`;
 
-              const composeUrl =
+              // =============== URLs ======================
+              const webComposerUrl =
                   "https://warpcast.com/~/compose?text=" + encodeURIComponent(text);
 
-              // 🔥 FORCE REDIRECT (iOS’ta %100 çalışıyor)
-              window.location.href = composeUrl;
+              const mobileDeepLink =
+                  "farcaster://compose?text=" + encodeURIComponent(text);
 
-              // BONUS
+              // =============== ENVIRONMENT CHECK ==========
+              const isMobileMiniApp =
+                  navigator.userAgent.includes("Warpcast") ||
+                  sdkRef?.platform === "ios" ||
+                  sdkRef?.platform === "android";
+
+              // 🔥 MOBILE MINI APP → USE DEEP LINK (100% WORKS)
+              if (isMobileMiniApp) {
+                window.location.href = mobileDeepLink;
+              } else {
+                // 💻 WEB DESKTOP → warpcast.com composer
+                const opened = window.open(webComposerUrl, "_blank");
+                if (!opened) window.location.href = webComposerUrl;
+              }
+
+              // 🎁 BONUS + UPDATE UI
               const bonus = 20;
               setScore(score + bonus);
 
@@ -548,8 +564,10 @@ export default function SolitaireGame({
 
             } catch (err: any) {
               alert("❌ ERROR: " + err?.message);
+              console.error("Share failed:", err);
             }
           });
+
         } catch (err) {
           console.error("💥 Farcaster share init failed:", err);
         }
@@ -730,43 +748,6 @@ export default function SolitaireGame({
       });
     }
 
-// ==================================================
-// 🧪 TEST SHARE BUTTON — FID AZUKI STYLE DIRECT COMPOSER
-// ==================================================
-    try {
-      const sdkRef = (window as any).sdk || (window as any).farcaster;
-
-      const testBtn = document.getElementById("test-share-btn");
-      if (testBtn && !(testBtn as any)._bound) {
-
-        (testBtn as any)._bound = true;
-
-        testBtn.addEventListener("click", async () => {
-          try {
-            alert("TEST: Starting native compose test…");
-
-            const testText =
-                "🧪 Test cast from Solitaire Mini App!\n" +
-                "If this opens the Warpcast composer, the deep link works.";
-
-            // 🔥 FID AZUKI-STYLE DEEP LINK — WORKS 100% ON MOBILE MINI APP
-            const deepLink =
-                "farcaster://compose?text=" + encodeURIComponent(testText);
-
-            // 🚀 Directly open Warpcast composer
-            window.location.href = deepLink;
-
-            alert("TEST: Opening Warpcast Composer…");
-
-          } catch (err: any) {
-            alert("TEST ERROR: " + err?.message);
-          }
-        });
-      }
-    } catch (err) {
-      console.error("💥 Test share init failed:", err);
-    }
-
     // --- TOUCH BINDER ---
     function attachTouchHandlers() {
       // placeholder’lara tık/touch
@@ -850,9 +831,6 @@ export default function SolitaireGame({
 
   return (
       <>
-        <button id="test-share-btn" className="control-btn">
-          🧪 Test Share
-        </button>
         <div className="game-container" id="game-container">
           <h1>Solitaire</h1>
           <div className="score-display">Score: 0</div>
