@@ -730,6 +730,47 @@ export default function SolitaireGame({
       });
     }
 
+// ==================================================
+// 🧪 TEST SHARE BUTTON — DIRECT COMPOSER OPEN TEST
+// ==================================================
+    try {
+      const testBtn = document.getElementById("test-share-btn");
+      if (testBtn && !(testBtn as any)._bound) {
+
+        (testBtn as any)._bound = true;
+
+        testBtn.addEventListener("click", async () => {
+
+          alert("TEST: Opening cast composer...");
+
+          const testText = "This is a test cast from Solitaire 🎮";
+
+          const url = "https://warpcast.com/~/compose?text=" + encodeURIComponent(testText);
+
+          // 1) Try SDK openUrl
+          const sdkRef = (window as any).sdk || (window as any).farcaster;
+
+          if (sdkRef?.openUrl) {
+            alert("TEST: Using sdk.openUrl()");
+            const res = await sdkRef.openUrl({ url });
+            alert("openUrl() result: " + JSON.stringify(res));
+            return;
+          }
+
+          // 2) Try window.open
+          alert("TEST: Using window.open()");
+          const win = window.open(url, "_blank");
+          if (win) return;
+
+          // 3) Force redirect
+          alert("TEST: Using window.location.href");
+          window.location.href = url;
+
+        });
+      }
+    } catch (err) {
+      alert("TEST ERROR: " + err);
+    }
 
     // --- TOUCH BINDER ---
     function attachTouchHandlers() {
@@ -814,6 +855,9 @@ export default function SolitaireGame({
 
   return (
       <>
+        <button id="test-share-btn" className="control-btn">
+          🧪 Test Share
+        </button>
         <div className="game-container" id="game-container">
           <h1>Solitaire</h1>
           <div className="score-display">Score: 0</div>
@@ -840,8 +884,12 @@ export default function SolitaireGame({
           {/* 🂡 Game Area */}
           <div className="top-piles">
             <div className="stock-waste-piles">
-              <div id="stock" className="pile"><div className="pile-placeholder"></div></div>
-              <div id="waste" className="pile"><div className="pile-placeholder"></div></div>
+              <div id="stock" className="pile">
+                <div className="pile-placeholder"></div>
+              </div>
+              <div id="waste" className="pile">
+                <div className="pile-placeholder"></div>
+              </div>
             </div>
             <div className="foundation-piles">
               {[0, 1, 2, 3].map(i => (
@@ -875,9 +923,9 @@ export default function SolitaireGame({
               <button id="share-on-farcaster-btn" className="control-btn alt">
                 🌀 Share on Farcaster (+20 bonus)
               </button>
-            <button className="new-game-btn play-again-btn">Play Again</button>
+              <button className="new-game-btn play-again-btn">Play Again</button>
+            </div>
           </div>
-         </div>
         </div>
 
         {/* 🧮 Score Leaderboard */}
@@ -886,7 +934,11 @@ export default function SolitaireGame({
             <h2>🏆 Leaderboard (Win Score)</h2>
             <table id="leaderboard-table">
               <thead>
-              <tr><th>Rank</th><th>Name</th><th>Total</th></tr>
+              <tr>
+                <th>Rank</th>
+                <th>Name</th>
+                <th>Total</th>
+              </tr>
               </thead>
               <tbody></tbody>
             </table>
@@ -900,7 +952,11 @@ export default function SolitaireGame({
             <h2>🏅 Leaderboard (Check-in Points)</h2>
             <table id="checkin-leaderboard-table">
               <thead>
-              <tr><th>Rank</th><th>Name</th><th>Points</th></tr>
+              <tr>
+                <th>Rank</th>
+                <th>Name</th>
+                <th>Points</th>
+              </tr>
               </thead>
               <tbody></tbody>
             </table>
