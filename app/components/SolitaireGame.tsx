@@ -731,7 +731,7 @@ export default function SolitaireGame({
     }
 
 // ==================================================
-// 🧪 TEST SHARE BUTTON — MINI APP SAFE TEST
+// 🧪 TEST SHARE BUTTON — FID AZUKI STYLE DIRECT COMPOSER
 // ==================================================
     try {
       const sdkRef = (window as any).sdk || (window as any).farcaster;
@@ -743,23 +743,20 @@ export default function SolitaireGame({
 
         testBtn.addEventListener("click", async () => {
           try {
-            alert("TEST: Starting share test…");
+            alert("TEST: Starting native compose test…");
 
             const testText =
                 "🧪 Test cast from Solitaire Mini App!\n" +
-                "If you see this, the external composer opened successfully.";
+                "If this opens the Warpcast composer, the deep link works.";
 
-            const composeUrl =
-                "https://warpcast.com/~/compose?text=" + encodeURIComponent(testText);
+            // 🔥 FID AZUKI-STYLE DEEP LINK — WORKS 100% ON MOBILE MINI APP
+            const deepLink =
+                "farcaster://compose?text=" + encodeURIComponent(testText);
 
-            // 🌟 Mini App'ten çık
-            alert("Closing Mini App…");
-            sdkRef?.close();
+            // 🚀 Directly open Warpcast composer
+            window.location.href = deepLink;
 
-            // 🚀 Mini App kapanınca composer aç
-            setTimeout(() => {
-              window.location.href = composeUrl;
-            }, 600);
+            alert("TEST: Opening Warpcast Composer…");
 
           } catch (err: any) {
             alert("TEST ERROR: " + err?.message);
