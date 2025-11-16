@@ -541,7 +541,7 @@ export default function SolitaireGame({
                   `${username} just cleared a Solitaire run on Farcaster!\n` +
                   `Score: ${score} pts — ${scoreComment}\n\n` +
                   `Try it & climb the leaderboard 👇\n` +
-                  `https://solitaire-frame.vercel.app?ref=${tracking}`;
+                  `https://farcaster.xyz/miniapps/-2zKveTkHy61/solitaire`;
 
               // ==================================================
               // 💻 WEB – RICH MODE
@@ -552,7 +552,7 @@ export default function SolitaireGame({
                   `🎁 +20 bonus earned for casting it on-chain.\n` +
                   txLink +
                   `\nTry it & climb the leaderboard 👇\n` +
-                  `https://solitaire-frame.vercel.app?ref=${tracking}`;
+                  `https://farcaster.xyz/miniapps/-2zKveTkHy61/solitaire`;
 
               // ==================================================
               // 🚀 EXECUTION — MINI APP MI, WEB Mİ?
