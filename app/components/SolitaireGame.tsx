@@ -731,45 +731,43 @@ export default function SolitaireGame({
     }
 
 // ==================================================
-// 🧪 TEST SHARE BUTTON — DIRECT COMPOSER OPEN TEST
+// 🧪 TEST SHARE BUTTON — MINI APP SAFE TEST
 // ==================================================
     try {
+      const sdkRef = (window as any).sdk || (window as any).farcaster;
+
       const testBtn = document.getElementById("test-share-btn");
       if (testBtn && !(testBtn as any)._bound) {
 
         (testBtn as any)._bound = true;
 
         testBtn.addEventListener("click", async () => {
+          try {
+            alert("TEST: Starting share test…");
 
-          alert("TEST: Opening cast composer...");
+            const testText =
+                "🧪 Test cast from Solitaire Mini App!\n" +
+                "If you see this, the external composer opened successfully.";
 
-          const testText = "This is a test cast from Solitaire 🎮";
+            const composeUrl =
+                "https://warpcast.com/~/compose?text=" + encodeURIComponent(testText);
 
-          const url = "https://warpcast.com/~/compose?text=" + encodeURIComponent(testText);
+            // 🌟 Mini App'ten çık
+            alert("Closing Mini App…");
+            sdkRef?.close();
 
-          // 1) Try SDK openUrl
-          const sdkRef = (window as any).sdk || (window as any).farcaster;
+            // 🚀 Mini App kapanınca composer aç
+            setTimeout(() => {
+              window.location.href = composeUrl;
+            }, 600);
 
-          if (sdkRef?.openUrl) {
-            alert("TEST: Using sdk.openUrl()");
-            const res = await sdkRef.openUrl({ url });
-            alert("openUrl() result: " + JSON.stringify(res));
-            return;
+          } catch (err: any) {
+            alert("TEST ERROR: " + err?.message);
           }
-
-          // 2) Try window.open
-          alert("TEST: Using window.open()");
-          const win = window.open(url, "_blank");
-          if (win) return;
-
-          // 3) Force redirect
-          alert("TEST: Using window.location.href");
-          window.location.href = url;
-
         });
       }
     } catch (err) {
-      alert("TEST ERROR: " + err);
+      console.error("💥 Test share init failed:", err);
     }
 
     // --- TOUCH BINDER ---
