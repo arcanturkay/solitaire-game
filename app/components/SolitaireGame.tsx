@@ -480,12 +480,10 @@ export default function SolitaireGame({
         }
 
 // ==================================================
-// 🌀 SHARE ON FARCASTER (DEBUG + MOBILE SAFE + WEB FULL)
+// 🌀 SHARE ON FARCASTER — UNIVERSAL MODE (WORKS EVERYWHERE)
 // ==================================================
         try {
           const sdkRef = (window as any).sdk || (window as any).farcaster;
-
-          console.log("🌀 Farcaster share init — SDK:", sdkRef);
 
           const shareBtn = document.getElementById("share-on-farcaster-btn") as HTMLButtonElement | null;
           if (!shareBtn || (shareBtn as any)._bound) return;
@@ -496,24 +494,7 @@ export default function SolitaireGame({
 
           shareBtn.addEventListener("click", async () => {
             try {
-              // 🔥 STEP 1
-              alert("STEP 1: SHARE CLICKED");
-
-              const isMiniApp = !!(sdkRef?.actions?.composeCast);
-
-              // 🔥 STEP 2 — SDK DURUMU
-              alert(
-                  "STEP 2: sdkRef = " +
-                  JSON.stringify({
-                    hasSdk: !!sdkRef,
-                    hasActions: !!sdkRef?.actions,
-                    hasComposeCast: !!sdkRef?.actions?.composeCast,
-                    hasOpenUrl: !!sdkRef?.openUrl
-                  })
-              );
-
-              // 🔥 STEP 3 — MiniApp kontrolü
-              alert("STEP 3: isMiniApp = " + isMiniApp);
+              alert("Sharing…");
 
               // ================ USERNAME =================
               const username = sdkRef?.context?.user?.username
@@ -532,60 +513,29 @@ export default function SolitaireGame({
                   ? `\n🧾 On-chain score: https://basescan.org/tx/${txHash}\n`
                   : "\n";
 
-              const tracking = "solitaire_share_v1";
-
-              // ==================================================
-              // 📱 MOBILE MINIAPP SAFE
-              // ==================================================
-              const mobileText =
-                  `${username} just cleared a Solitaire run on Farcaster!\n` +
-                  `Score: ${score} pts — ${scoreComment}\n\n` +
-                  `Try it & climb the leaderboard 👇\n` +
-                  `https://farcaster.xyz/miniapps/-2zKveTkHy61/solitaire`;
-
-              // ==================================================
-              // 💻 WEB – RICH MODE
-              // ==================================================
-              const webText =
+              const text =
                   `♦️ ♥️ ♠️ ♣️  ${username} just cleared a Solitaire run on Farcaster!\n` +
                   `🍀 Score: ${score} pts — ${scoreComment}\n` +
-                  `🎁 +20 bonus earned for casting it on-chain.\n` +
                   txLink +
-                  `\nTry it & climb the leaderboard 👇\n` +
+                  `\nPlay & compete 👇\n` +
                   `https://farcaster.xyz/miniapps/-2zKveTkHy61/solitaire`;
 
               // ==================================================
-              // 🚀 EXECUTION — MINI APP MI, WEB Mİ?
+              // ALWAYS USE WEB COMPOSER (BEST FOR MOBILE)
               // ==================================================
+              const composeUrl =
+                  "https://warpcast.com/~/compose?text=" + encodeURIComponent(text);
 
-              if (isMiniApp) {
-                alert("STEP 4: Calling composeCast()");
-
-                const result = await sdkRef.actions.composeCast({
-                  text: mobileText
-                });
-
-                alert("STEP 5: composeCast RESULT = " + JSON.stringify(result));
-
-                if (!result?.cast) {
-                  alert("STEP 6: composeCast: no cast returned");
-                  return;
-                }
-
+              // ⭐ 1️⃣ Eğer openUrl varsa → bunu kullan
+              if (sdkRef?.openUrl) {
+                await sdkRef.openUrl({ url: composeUrl });
               } else {
-                alert("STEP 4: NO MiniApp → Using openUrl fallback");
-
-                const url =
-                    "https://warpcast.com/~/compose?text=" + encodeURIComponent(webText);
-
-                const r = await sdkRef?.openUrl?.({ url });
-
-                alert("STEP 5: openUrl RESULT = " + JSON.stringify(r));
+                // ⭐ 2️⃣ fallback → yeni sekme
+                const opened = window.open(composeUrl, "_blank");
+                if (!opened) window.location.href = composeUrl;
               }
 
-              // ==================================================
-              // 🎁 BONUS +20
-              // ==================================================
+              // 🎁 BONUS + UI
               const bonus = 20;
               setScore(score + bonus);
 
@@ -596,33 +546,22 @@ export default function SolitaireGame({
                   body: JSON.stringify({
                     playerAddress: toAddr,
                     bonus,
-                    reason: "shared_on_farcaster"
-                  })
+                    reason: "shared_on_farcaster",
+                  }),
                 });
               }
 
-              // ==================================================
-              // UI UPDATES
-              // ==================================================
-              shareBtn.textContent = "✅ Shared! (+20 bonus)";
+              shareBtn.textContent = "✅ Shared! (+20)";
               shareBtn.style.opacity = "0.7";
 
-              const winModal = document.getElementById("win-modal");
-              if (winModal) winModal.classList.remove("visible");
-
-              const newGameBtn = document.querySelector(".new-game-btn") as HTMLElement | null;
-              if (newGameBtn) newGameBtn.click();
-
+              alert("Shared!");
             } catch (err: any) {
               alert("❌ ERROR: " + err?.message);
-              console.error("❌ Share failed:", err);
             }
           });
-
         } catch (err) {
           console.error("💥 Farcaster share init failed:", err);
         }
-
 
       } catch (err: any) {
         console.error("❌ recordMyWin failed:", err);
