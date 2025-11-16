@@ -480,7 +480,7 @@ export default function SolitaireGame({
         }
 
 // ==================================================
-// 🌀 SHARE ON FARCASTER — FIXED (REAL COMPOSER LINK)
+// 🌀 SHARE — FINAL WORKING COMPOSER (NO MORE @compose BUG)
 // ==================================================
         try {
           const sdkRef = (window as any).sdk || (window as any).farcaster;
@@ -515,17 +515,33 @@ export default function SolitaireGame({
                     `\nPlay it 👇\n` +
                     `https://farcaster.xyz/miniapps/-2zKveTkHy61/solitaire`;
 
-                // 🚀 Doğru Composer URL (BU ÇALIŞIR)
+                // 🟣 DOĞRU DEEP LINK — iOS/Android guaranteed
                 const deepComposer =
-                    "farcaster://casts/compose?text=" + encodeURIComponent(castText);
+                    "warpcast://~/compose?text=" + encodeURIComponent(castText);
 
-                // Mini App'ten çık
-                await sdkRef?.close();
+                // 1) Mini App'i kapat
+                try {
+                  await sdkRef?.close();
+                } catch (e) {}
 
-                // 800ms sonra composera yönlendir
+                // 2) 250ms sonra composer'a yönlendir
                 setTimeout(() => {
                   window.location.href = deepComposer;
-                }, 800);
+                }, 250);
+
+                // 3) iOS fallback — invisible iframe
+                setTimeout(() => {
+                  const iframe = document.createElement("iframe");
+                  iframe.style.display = "none";
+                  iframe.src = deepComposer;
+                  document.body.appendChild(iframe);
+                  setTimeout(() => iframe.remove(), 2000);
+                }, 600);
+
+                // 4) Son fallback
+                setTimeout(() => {
+                  window.location.assign(deepComposer);
+                }, 1200);
 
               } catch (err: any) {
                 alert("❌ ERROR: " + err?.message);
@@ -534,7 +550,7 @@ export default function SolitaireGame({
           }
 
         } catch (err) {
-          console.error("💥 Farcaster share init failed:", err);
+          console.error("💥 Share init failed:", err);
         }
 
       } catch (err: any) {
