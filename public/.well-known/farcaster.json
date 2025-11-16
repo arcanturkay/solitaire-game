@@ -24,6 +24,11 @@
     }
   },
 
+  "actions": {
+    "composeCast": true,
+    "openUrl": true
+  },
+
   "frame": {
     "name": "Solitaire",
     "version": "1",
