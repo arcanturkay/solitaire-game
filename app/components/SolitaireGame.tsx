@@ -46,10 +46,8 @@ export default function SolitaireGame({
       });
     }
 
-// iOS MiniApp DOM reset ettiği için → 250ms’de bir kontrol
     setInterval(bindMobileTestButton, 250);
 
-// global handler
     window.__mobile_share_test_handler = async function () {
       try {
         alert("📱 Mobile Share Test Triggered!");
