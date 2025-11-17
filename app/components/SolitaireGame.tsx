@@ -675,7 +675,7 @@ export default function SolitaireGame({
         setTimeout(attachTouchHandlers, 100);
       });
     });
-
+    setupTestShare();   // 👈 buraya ekle
     // İlk oyun
     resetGame();
     setTimeout(attachTouchHandlers, 100);
@@ -741,7 +741,6 @@ export default function SolitaireGame({
         }
       });
     }
-
     function setupTestShare() {
       const sdkRef = (window as any).farcaster || (window as any).sdk;
       const btn = document.getElementById("test-share-btn");
@@ -756,33 +755,33 @@ export default function SolitaireGame({
 
       btn.addEventListener("click", async () => {
         try {
-          alert("🧪 TEST: Share trigger");
+          alert("🧪 TEST START");
 
           const text = "🧪 Test cast from Solitaire Mini App!";
           const WEB_COMPOSER =
               "https://warpcast.com/~/compose?text=" + encodeURIComponent(text);
 
-          // ANDROID → composeCast çalışıyor
+          // ANDROID → composeCast sağlam
           if (isAndroid && isMiniApp && sdkRef?.actions?.composeCast) {
             alert("ANDROID → composeCast()");
             await sdkRef.actions.composeCast({ text });
             return;
           }
 
-          // iOS Mini App → deep link bozuk → çözüm = MiniApp kapanır → web composer açılır
+          // iOS Mini App
           if (isIOS && isMiniApp) {
-            alert("iOS MiniApp → closing MiniApp → opening composer");
+            alert("iOS → closing MiniApp first");
 
             await sdkRef?.close?.();
 
             setTimeout(() => {
               window.location.href = WEB_COMPOSER;
-            }, 350);
+            }, 500); // 👈 daha stabil
 
             return;
           }
 
-          // WEB / fallback
+          // Web fallback
           const opened = window.open(WEB_COMPOSER, "_blank");
           if (!opened) window.location.href = WEB_COMPOSER;
 
@@ -835,7 +834,7 @@ export default function SolitaireGame({
       createDeck();
       shuffleDeck();
       dealCards();
-      setupTestShare();
+
 
 
       // --- dağıtım sonrası placeholder düzeni ---
