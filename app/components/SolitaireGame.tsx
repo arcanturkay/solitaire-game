@@ -742,6 +742,55 @@ export default function SolitaireGame({
       });
     }
 
+    function setupTestShare() {
+      const sdkRef = (window as any).farcaster || (window as any).sdk;
+      const btn = document.getElementById("test-share-btn");
+      if (!btn || (btn as any)._bound) return;
+
+      (btn as any)._bound = true;
+
+      const ua = navigator.userAgent || "";
+      const isIOS = /iPhone|iPad|iPod/.test(ua);
+      const isAndroid = /Android/.test(ua);
+      const isMiniApp = !!sdkRef?.actions;
+
+      btn.addEventListener("click", async () => {
+        try {
+          alert("🧪 TEST: Share trigger");
+
+          const text = "🧪 Test cast from Solitaire Mini App!";
+          const WEB_COMPOSER =
+              "https://warpcast.com/~/compose?text=" + encodeURIComponent(text);
+
+          // ANDROID → composeCast çalışıyor
+          if (isAndroid && isMiniApp && sdkRef?.actions?.composeCast) {
+            alert("ANDROID → composeCast()");
+            await sdkRef.actions.composeCast({ text });
+            return;
+          }
+
+          // iOS Mini App → deep link bozuk → çözüm = MiniApp kapanır → web composer açılır
+          if (isIOS && isMiniApp) {
+            alert("iOS MiniApp → closing MiniApp → opening composer");
+
+            await sdkRef?.close?.();
+
+            setTimeout(() => {
+              window.location.href = WEB_COMPOSER;
+            }, 350);
+
+            return;
+          }
+
+          // WEB / fallback
+          const opened = window.open(WEB_COMPOSER, "_blank");
+          if (!opened) window.location.href = WEB_COMPOSER;
+
+        } catch (err: any) {
+          alert("❌ TEST ERROR: " + err?.message);
+        }
+      });
+    }
     // --- TOUCH BINDER ---
     function attachTouchHandlers() {
       // placeholder’lara tık/touch
@@ -786,6 +835,8 @@ export default function SolitaireGame({
       createDeck();
       shuffleDeck();
       dealCards();
+      setupTestShare();
+
 
       // --- dağıtım sonrası placeholder düzeni ---
       (Array.from(tableauPiles) as HTMLElement[]).forEach((p) => {
@@ -824,6 +875,7 @@ export default function SolitaireGame({
 
   return (
       <>
+        <button id="test-share-btn" className="control-btn alt">🧪 Test Share</button>
         <div className="game-container" id="game-container">
           <h1>Solitaire</h1>
           <div className="score-display">Score: 0</div>
