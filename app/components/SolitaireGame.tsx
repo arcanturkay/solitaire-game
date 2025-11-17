@@ -32,7 +32,7 @@ export default function SolitaireGame({
 // 📱 TEST MOBILE SHARE (iOS + Android MiniApp) — FINAL WORKING VERSION
 // ===================================================================
 
-// Lucky: MiniApp DOM is VERY unstable → we must auto-bind repeatedly
+// Rebind mobile test button repeatedly (MiniApp DOM resets)
     function bindMobileTestButton() {
       const btn = document.getElementById("test-mobile-share-btn");
       if (!btn || (btn as any)._bound) return;
@@ -48,26 +48,25 @@ export default function SolitaireGame({
 
     setInterval(bindMobileTestButton, 250);
 
+// ================================
+// 📱 FINAL WORKING MOBILE SHARE TEST
+// ================================
     window.__mobile_share_test_handler = async function () {
       try {
         alert("📱 Mobile Share Test Triggered!");
 
-        const testText =
-            "📱 Mobile Test Cast!\nIf this opens Warpcast composer → SUCCESS.";
+        const text = "📱 Test cast – trying direct composer open.";
+        const deepLink =
+            "farcaster://casts/add?text=" + encodeURIComponent(text);
 
-        // 1) MiniApp'ten Safari'ye kaç
-        window.location.href = "https://warpcast.com";
-
-        // 2) Composer aç (Safari içinde)
-        setTimeout(() => {
-          window.location.href =
-              "https://warpcast.com/~/compose?text=" + encodeURIComponent(testText);
-        }, 700);
+        // iOS MiniApp → user-triggered deep link (best possible attempt)
+        window.location.href = deepLink;
 
       } catch (err) {
-        alert("❌ Mobile Test Error: " + err);
+        alert("❌ ERROR: " + err);
       }
     };
+
     // --- CONSTS & DOM ---
     const DOMAIN_TAG = window.location.hostname.replace(/\./g, '_');
     const SCORE_TOTALS_KEY = `solitaireAccumulatedScores_${DOMAIN_TAG}`;
