@@ -54,25 +54,20 @@ export default function SolitaireGame({
       try {
         alert("📱 Mobile Share Test Triggered!");
 
-        const sdkRef = (window as any).farcaster || (window as any).sdk;
-
         const testText =
             "📱 Mobile Test Cast!\nIf this opens Warpcast composer → SUCCESS.";
 
-        const composerUrl =
-            "https://warpcast.com/~/compose?text=" + encodeURIComponent(testText);
+        // 1) MiniApp'ten Safari'ye kaç
+        window.location.href = "https://warpcast.com";
 
-        // 1) MiniApp must close first (iOS requirement)
-        await sdkRef?.close?.();
-        await sdkRef?.close?.();
-
-        // 2) After closing → open composer
+        // 2) Composer aç (Safari içinde)
         setTimeout(() => {
-          window.location.href = composerUrl;
-        }, 350);
+          window.location.href =
+              "https://warpcast.com/~/compose?text=" + encodeURIComponent(testText);
+        }, 700);
 
-      } catch (err: any) {
-        alert("❌ Mobile Test Error: " + err.message);
+      } catch (err) {
+        alert("❌ Mobile Test Error: " + err);
       }
     };
     // --- CONSTS & DOM ---
