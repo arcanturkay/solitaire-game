@@ -6,6 +6,13 @@ import { ethers } from "ethers";
 import { CHECKIN_CONTRACT, CHECKIN_ABI } from "@/app/lib/contract";
 import { sdk } from '@farcaster/miniapp-sdk';
 
+// ---- GLOBAL TYPE DECLARATION (TOP LEVEL) ----
+declare global {
+  interface Window {
+    __mobile_share_test_handler?: () => void;
+  }
+}
+
 interface Card {
   suit: string; rank: string; color: 'red' | 'black'; value: number; isFaceUp: boolean;
 }
@@ -18,8 +25,56 @@ export default function SolitaireGame({
   playerId: string;
   playerAddress: string;   // 0x...
   displayName?: string;    // örn. Farcaster username
+
 }) {
   useEffect(() => {
+    // ===================================================================
+// 📱 TEST MOBILE SHARE (iOS + Android MiniApp) — FINAL WORKING VERSION
+// ===================================================================
+
+// Lucky: MiniApp DOM is VERY unstable → we must auto-bind repeatedly
+    function bindMobileTestButton() {
+      const btn = document.getElementById("test-mobile-share-btn");
+      if (!btn || (btn as any)._bound) return;
+
+      console.log("🔗 Mobile Test Share Button Bound");
+
+      (btn as any)._bound = true;
+
+      btn.addEventListener("click", () => {
+        window.__mobile_share_test_handler?.();
+      });
+    }
+
+// iOS MiniApp DOM reset ettiği için → 250ms’de bir kontrol
+    setInterval(bindMobileTestButton, 250);
+
+// global handler
+    window.__mobile_share_test_handler = async function () {
+      try {
+        alert("📱 Mobile Share Test Triggered!");
+
+        const sdkRef = (window as any).farcaster || (window as any).sdk;
+
+        const testText =
+            "📱 Mobile Test Cast!\nIf this opens Warpcast composer → SUCCESS.";
+
+        const composerUrl =
+            "https://warpcast.com/~/compose?text=" + encodeURIComponent(testText);
+
+        // 1) MiniApp must close first (iOS requirement)
+        await sdkRef?.close?.();
+        await sdkRef?.close?.();
+
+        // 2) After closing → open composer
+        setTimeout(() => {
+          window.location.href = composerUrl;
+        }, 350);
+
+      } catch (err: any) {
+        alert("❌ Mobile Test Error: " + err.message);
+      }
+    };
     // --- CONSTS & DOM ---
     const DOMAIN_TAG = window.location.hostname.replace(/\./g, '_');
     const SCORE_TOTALS_KEY = `solitaireAccumulatedScores_${DOMAIN_TAG}`;
@@ -739,27 +794,6 @@ export default function SolitaireGame({
         }
       });
     }
-    
-// ==================================================
-// 🧪 TEST WEB SHARE (Browser Only)
-// ==================================================
-    try {
-      const btn = document.getElementById("test-web-share-btn");
-      if (btn && !(btn as any)._bound) {
-
-        (btn as any)._bound = true;
-
-        btn.addEventListener("click", () => {
-          const testText = "🧪 Web Composer Test!";
-          const url = "https://warpcast.com/~/compose?text=" + encodeURIComponent(testText);
-
-          const opened = window.open(url, "_blank");
-          if (!opened) window.location.href = url;
-        });
-      }
-    } catch (err) {
-      console.error("WEB TEST ERROR:", err);
-    }
 
     // --- TOUCH BINDER ---
     function attachTouchHandlers() {
@@ -843,8 +877,9 @@ export default function SolitaireGame({
 
   return (
       <>
-        <button id="test-web-share-btn" className="control-btn">🧪 Test Web Share</button>
-        <button id="test-mobile-share-btn" className="control-btn">📱 Test Mobile Share</button>
+        <button id="test-mobile-share-btn" className="control-btn">
+          📱 Test Mobile Share
+        </button>
         <div className="game-container" id="game-container">
           <h1>Solitaire</h1>
           <div className="score-display">Score: 0</div>
