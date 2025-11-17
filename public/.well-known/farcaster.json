@@ -28,6 +28,9 @@
     "composeCast": true,
     "openUrl": true
   },
+  "bridge": {
+    "actions": true
+  },
 
   "frame": {
     "name": "Solitaire",
