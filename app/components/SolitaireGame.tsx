@@ -6,13 +6,6 @@ import { ethers } from "ethers";
 import { CHECKIN_CONTRACT, CHECKIN_ABI } from "@/app/lib/contract";
 import { sdk } from '@farcaster/miniapp-sdk';
 
-// ---- GLOBAL TYPE DECLARATION (TOP LEVEL) ----
-declare global {
-  interface Window {
-    __mobile_share_test_handler?: () => void;
-  }
-}
-
 interface Card {
   suit: string; rank: string; color: 'red' | 'black'; value: number; isFaceUp: boolean;
 }
@@ -28,75 +21,6 @@ export default function SolitaireGame({
 
 }) {
   useEffect(() => {
-    // ===================================================================
-// 📱 TEST MOBILE SHARE (iOS + Android MiniApp) — FINAL WORKING VERSION
-// ===================================================================
-
-// Rebind mobile test button repeatedly (MiniApp DOM resets)
-    function bindMobileTestButton() {
-      const btn = document.getElementById("test-mobile-share-btn");
-      if (!btn || (btn as any)._bound) return;
-
-      console.log("🔗 Mobile Test Share Button Bound");
-
-      (btn as any)._bound = true;
-
-      btn.addEventListener("click", () => {
-        window.__mobile_share_test_handler?.();
-      });
-    }
-
-    setInterval(bindMobileTestButton, 250);
-
-    // ================================
-// 📱 FINAL WORKING MOBILE SHARE TEST
-// ================================
-    window.__mobile_share_test_handler = async function () {
-      try {
-        alert("📱 Mobile Share Test Triggered!");
-
-        const castText =
-            "📱 Test cast – Direct composer open attempt from Solitaire.";
-
-        const composerUrl =
-            "https://warpcast.com/~/compose?text=" + encodeURIComponent(castText);
-
-        // 1) MiniApp'i kapat (varsa)
-        const sdk = (window as any).farcaster || (window as any).sdk;
-        await sdk?.close?.();
-
-        // 2) MiniApp kapanmasını bekleyip composer aç
-        waitForMiniAppCloseAndOpen(composerUrl);
-
-      } catch (err) {
-        alert("❌ ERROR: " + err);
-      }
-    };
-
-// ================================
-// 👇 MiniApp kapanınca composer açan fonksiyon
-// ================================
-    function waitForMiniAppCloseAndOpen(url) {
-      let tries = 0;
-
-      const timer = setInterval(() => {
-        tries++;
-
-        const stillOpen = (window as any).farcaster || (window as any).sdk;
-
-        if (!stillOpen) {
-          clearInterval(timer);
-          window.location.href = url;  // 🎯 Composer aç
-          return;
-        }
-
-        if (tries > 25) {
-          clearInterval(timer);
-          window.location.href = url; // fallback
-        }
-      }, 120);
-    }
-
 
     // --- CONSTS & DOM ---
     const DOMAIN_TAG = window.location.hostname.replace(/\./g, '_');
@@ -900,9 +824,6 @@ export default function SolitaireGame({
 
   return (
       <>
-        <button id="test-mobile-share-btn" className="control-btn">
-          📱 Test Mobile Share
-        </button>
         <div className="game-container" id="game-container">
           <h1>Solitaire</h1>
           <div className="score-display">Score: 0</div>
