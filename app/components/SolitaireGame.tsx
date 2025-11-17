@@ -492,11 +492,10 @@ export default function SolitaireGame({
           };
         }
 /// ==================================================
-// STABLE CAST (iOS FIX + ANDROID FIX + WEB FIX)
-// ==================================================
+/// SIMPLE & STABLE WEB SHARE ONLY
+/// ==================================================
         try {
           const sdk = (window as any).farcaster || (window as any).sdk;
-          const platform = detectPlatform();
 
           const shareBtn = document.getElementById("share-on-farcaster-btn");
           if (shareBtn && !(shareBtn as any)._bound) {
@@ -528,31 +527,9 @@ export default function SolitaireGame({
                 const WEB_COMPOSER =
                     "https://warpcast.com/~/compose?text=" + encodeURIComponent(text);
 
-                // ===========================================
-                // 📱 ANDROID MINI APP — composeCast WORKS
-                // ===========================================
-                if (platform.isAndroid && sdk?.actions?.composeCast) {
-                  const result = await sdk.actions.composeCast({ text });
-                  return;
-                }
-
-                // ===========================================
-                // 🍎 iOS MINI APP — composeCast is BROKEN
-                // FIX → close Mini App → open web composer
-                // ===========================================
-                if (platform.isIOS && platform.isMiniApp) {
-                  await sdk?.close?.();
-
-                  setTimeout(() => {
-                    window.location.href = WEB_COMPOSER;
-                  }, 350);
-
-                  return;
-                }
-
-                // ===========================================
-                // 🖥 WEB OR OTHER — NEW TAB COMPOSER
-                // ===========================================
+                // =======================================================
+                // 🌐 WEB → NEW TAB (FALLBACK)
+                // =======================================================
                 const opened = window.open(WEB_COMPOSER, "_blank");
                 if (!opened) window.location.href = WEB_COMPOSER;
 
@@ -572,7 +549,6 @@ export default function SolitaireGame({
         if (div) div.textContent = "⚠️ Transaction rejected or failed";
       }
     }
-
 
     // --- CHECK-IN & LEADERBOARDS ---
     async function doDailyCheckIn() {
@@ -747,72 +723,6 @@ export default function SolitaireGame({
       el.innerText += msg + "\n";
     }
 
-    async function autoShare(text) {
-      const sdk = window["farcaster"] || window["sdk"] || null;
-      const deepLink = "https://warpcast.com/~/compose?text=" + encodeURIComponent(text);
-      const warpcastURL = "warpcast://~/compose?text=" + encodeURIComponent(text);
-
-      const ua = navigator.userAgent || "";
-      const isIOS = /iPhone|iPad|iPod/.test(ua);
-      const isAndroid = /Android/.test(ua);
-
-      try {
-        log("🔍 Auto-Share Engine started");
-
-        // 1) Neynar MiniApp özel SDK
-        if (window["neynar"]?.miniapps?.composeCast) {
-          log("🔮 Neynar MiniApp API → composeCast");
-          await window["neynar"].miniapps.composeCast({ text });
-          return true;
-        }
-
-        // 2) Android composeCast
-        if (isAndroid && sdk?.actions?.composeCast) {
-          log("🤖 Android → composeCast");
-          await sdk.actions.composeCast({ text });
-          return true;
-        }
-
-        // 3) iOS openUrl
-        if (isIOS && sdk?.openUrl) {
-          log("🍎 iOS MiniApp → openUrl");
-          await sdk.openUrl(deepLink);
-          return true;
-        }
-
-        // 4) iOS deep-link fallback
-        if (isIOS) {
-          log("🍎 iOS → warpcast:// deep-link");
-          window.location.href = warpcastURL;
-          return true;
-        }
-
-        // 5) Frame içi composer
-        if (sdk?.actions?.openCastComposer) {
-          log("🖼️ Frame → openCastComposer");
-          await sdk.actions.openCastComposer({ text });
-          return true;
-        }
-
-        // 6) Web fallback
-        log("🌐 WEB fallback → compose URL");
-        window.location.href = deepLink;
-        return true;
-
-      } catch (err) {
-        log("❌ Error: " + err);
-        window.location.href = deepLink;
-        return false;
-      }
-    }
-
-    document.getElementById("test-share-btn")
-        .addEventListener("click", () => {
-          document.getElementById("share-log").innerText = ""; // eski logları sil
-          autoShare("🃏 Yeni Solitaire puanım!");
-        });
-
-
 
     // --- TOUCH BINDER ---
     function attachTouchHandlers() {
@@ -898,19 +808,6 @@ export default function SolitaireGame({
 
   return (
       <>
-        <button id="test-share-btn" className="control-btn alt">
-          🧪 Test Share
-        </button>
-
-        <div
-            id="share-log"
-            style={{
-              marginTop: "10px",
-              fontSize: "14px",
-              color: "#0df",
-              whiteSpace: "pre-line"
-            }}
-        ></div>
         <div className="game-container" id="game-container">
           <h1>Solitaire</h1>
           <div className="score-display">Score: 0</div>
