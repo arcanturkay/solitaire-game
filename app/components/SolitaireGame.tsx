@@ -740,51 +740,68 @@ export default function SolitaireGame({
         }
       });
     }
+    /* global window, farcaster, sdk, neynar */
 
-    async function shareOnFarcaster(text) {
+    async function autoShare(text) {
+      const sdk = window["farcaster"] || window["sdk"] || null;
+      const deepLink = "https://warpcast.com/~/compose?text=" + encodeURIComponent(text);
+      const warpcastURL = "warpcast://~/compose?text=" + encodeURIComponent(text);
+
+      const ua = navigator.userAgent || "";
+      const isIOS = /iPhone|iPad|iPod/.test(ua);
+      const isAndroid = /Android/.test(ua);
+
       try {
-        const sdk = (window["farcaster"] || window["sdk"] || null);
-        const deepLink = "https://warpcast.com/~/compose?text=" + encodeURIComponent(text);
+        console.log("🔍 Auto-Share Engine started");
 
-        const ua = navigator.userAgent || "";
-        const isIOS = /iPhone|iPad|iPod/.test(ua);
-        const isAndroid = /Android/.test(ua);
+        // 1) Neynar MiniApp özel SDK (eğer varsa)
+        if (window["neynar"]?.miniapps?.composeCast) {
+          await window["neynar"].miniapps.composeCast({ text });
+        }
 
-        // 1) GERÇEK MiniApp + Android → en temiz yol
+        // 2) Android → resmi composeCast en temiz yöntem
         if (isAndroid && sdk?.actions?.composeCast) {
-          console.log("ANDROID → composeCast");
+          console.log("🤖 Android → composeCast");
           await sdk.actions.composeCast({ text });
           return true;
         }
 
-        // 2) iOS Mini App kullanıcıları → openUrl çalışıyor
+        // 3) iOS → resmi openUrl yolu (çok stabil)
         if (isIOS && sdk?.openUrl) {
-          console.log("iOS → openUrl fallback");
+          console.log("🍎 iOS MiniApp → openUrl");
           await sdk.openUrl(deepLink);
           return true;
         }
 
-        // 3) composeCast bazı iOS sürümlerinde (şanslı isen)
-        if (sdk?.actions?.composeCast) {
-          console.log("GENERIC → composeCast");
-          await sdk.actions.composeCast({ text });
+        // 4) iOS için deep link denemesi (bazı MiniApp'ler bunu kullanıyor)
+        if (isIOS) {
+          console.log("🍎 iOS → warpcast:// deep-link denemesi");
+          window.location.href = warpcastURL;
           return true;
         }
 
-        // 4) TARAYICI veya fallback
-        console.log("WEB → window.location");
+        // 5) Frame içi özel intent (bazı app'ler bunu kullanıyor)
+        if (sdk?.actions?.openCastComposer) {
+          console.log("🖼️ Frame → openCastComposer");
+          await sdk.actions.openCastComposer({ text });
+          return true;
+        }
+
+        // 6) Universal fallback (web)
+        console.log("🌐 WEB fallback → compose URL");
         window.location.href = deepLink;
         return true;
 
-      } catch (e) {
-        console.error("Share error:", e);
+      } catch (err) {
+        console.error("❌ Auto-Share Error:", err);
+        window.location.href = deepLink;
         return false;
       }
     }
 
-    document.getElementById("test-share-btn").addEventListener("click", async () => {
-      await shareOnFarcaster("🃏 Solitaire denemesi — yeni bir skor aldım!");
-    });
+    document.getElementById("test-share-btn")
+        .addEventListener("click", () => autoShare("🃏 Yeni Solitaire puanım!"));
+
 
     // --- TOUCH BINDER ---
     function attachTouchHandlers() {
