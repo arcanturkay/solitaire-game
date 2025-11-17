@@ -900,9 +900,7 @@ export default function SolitaireGame({
 
   return (
       <>
-        <button id="test-mobile-share-btn"
-                style="margin-top:20px; padding:10px 16px; border-radius:8px;
-               background:#6C5CE7; color:white; font-size:16px;">
+        <button id="test-mobile-share-btn" className="control-btn">
           📱 Test Mobile Share
         </button>
         <div className="game-container" id="game-container">
