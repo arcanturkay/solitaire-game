@@ -831,7 +831,6 @@ export default function SolitaireGame({
   } catch {
     // web ortamında hata verirse sessiz geç
   }
-
   
   return (
       <>
