@@ -48,24 +48,55 @@ export default function SolitaireGame({
 
     setInterval(bindMobileTestButton, 250);
 
-// ================================
+    // ================================
 // 📱 FINAL WORKING MOBILE SHARE TEST
 // ================================
     window.__mobile_share_test_handler = async function () {
       try {
         alert("📱 Mobile Share Test Triggered!");
 
-        const text = "📱 Test cast – trying direct composer open.";
-        const deepLink =
-            "farcaster://casts/add?text=" + encodeURIComponent(text);
+        const castText =
+            "📱 Test cast – Direct composer open attempt from Solitaire.";
 
-        // iOS MiniApp → user-triggered deep link (best possible attempt)
-        window.location.href = deepLink;
+        const composerUrl =
+            "https://warpcast.com/~/compose?text=" + encodeURIComponent(castText);
+
+        // 1) MiniApp'i kapat (varsa)
+        const sdk = (window as any).farcaster || (window as any).sdk;
+        await sdk?.close?.();
+
+        // 2) MiniApp kapanmasını bekleyip composer aç
+        waitForMiniAppCloseAndOpen(composerUrl);
 
       } catch (err) {
         alert("❌ ERROR: " + err);
       }
     };
+
+// ================================
+// 👇 MiniApp kapanınca composer açan fonksiyon
+// ================================
+    function waitForMiniAppCloseAndOpen(url) {
+      let tries = 0;
+
+      const timer = setInterval(() => {
+        tries++;
+
+        const stillOpen = (window as any).farcaster || (window as any).sdk;
+
+        if (!stillOpen) {
+          clearInterval(timer);
+          window.location.href = url;  // 🎯 Composer aç
+          return;
+        }
+
+        if (tries > 25) {
+          clearInterval(timer);
+          window.location.href = url; // fallback
+        }
+      }, 120);
+    }
+
 
     // --- CONSTS & DOM ---
     const DOMAIN_TAG = window.location.hostname.replace(/\./g, '_');
@@ -869,7 +900,9 @@ export default function SolitaireGame({
 
   return (
       <>
-        <button id="test-mobile-share-btn" className="control-btn">
+        <button id="test-mobile-share-btn"
+                style="margin-top:20px; padding:10px 16px; border-radius:8px;
+               background:#6C5CE7; color:white; font-size:16px;">
           📱 Test Mobile Share
         </button>
         <div className="game-container" id="game-container">
