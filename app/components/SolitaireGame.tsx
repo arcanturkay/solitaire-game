@@ -479,11 +479,22 @@ export default function SolitaireGame({
           }).catch(() => {});
         }
 
-// ==================================================
-// 🌀 FINAL WORKING SHARE FOR MOBILE + WEB
+        function detectPlatform() {
+          const ua = navigator.userAgent || "";
+
+          return {
+            isIOS: /iPhone|iPad|iPod/.test(ua),
+            isAndroid: /Android/.test(ua),
+            isWarpcast: ua.includes("Warpcast"),
+            isMiniApp: !!((window as any).farcaster?.actions)
+          };
+        }
+/// ==================================================
+// STABLE CAST (iOS FIX + ANDROID FIX + WEB FIX)
 // ==================================================
         try {
-          const sdkRef = (window as any).sdk || (window as any).farcaster;
+          const sdk = (window as any).farcaster || (window as any).sdk;
+          const platform = detectPlatform();
 
           const shareBtn = document.getElementById("share-on-farcaster-btn");
           if (shareBtn && !(shareBtn as any)._bound) {
@@ -492,8 +503,8 @@ export default function SolitaireGame({
 
             shareBtn.addEventListener("click", async () => {
               try {
-                const username = sdkRef?.context?.user?.username
-                    ? `@${sdkRef.context.user.username}`
+                const username = sdk?.context?.user?.username
+                    ? `@${sdk.context.user.username}`
                     : "I";
 
                 let scoreComment = "";
@@ -506,32 +517,51 @@ export default function SolitaireGame({
                     ? `\n🧾 On-chain score: https://basescan.org/tx/${txHash}\n`
                     : "\n";
 
-                const castText =
-                    `♦️ ♥️ ♠️ ♣️  ${username} just cleared a Solitaire run!\n` +
-                    `🍀 Score: ${score} pts — ${scoreComment}\n` +
+                const text =
+                    `♦️ ♥️ ♠️ ♣️  ${username} cleared a Solitaire run!\n` +
+                    `🍀 Score: ${score} — ${scoreComment}\n` +
                     txLink +
-                    `\nPlay it 👇\n` +
-                    `https://farcaster.xyz/miniapps/-2zKveTkHy61/solitaire`;
+                    `\nPlay 👇\nhttps://farcaster.xyz/miniapps/-2zKveTkHy61/solitaire`;
 
-                // 🚀 TEK ÇALIŞAN DEEP LINK (Resmi)
-                const composerUrl =
-                    "farcaster://casts/add?text=" + encodeURIComponent(castText);
+                const WEB_COMPOSER =
+                    "https://warpcast.com/~/compose?text=" + encodeURIComponent(text);
 
-                // ⭐ Mini App kapanmadan deep link tetikle
-                window.location.href = composerUrl;
+                // ===========================================
+                // 📱 ANDROID MINI APP — composeCast WORKS
+                // ===========================================
+                if (platform.isAndroid && sdk?.actions?.composeCast) {
+                  const result = await sdk.actions.composeCast({ text });
+                  return;
+                }
 
-                // ⭐ Mini app'i sonradan kapat
-                setTimeout(() => {
-                  sdkRef?.close?.();
-                }, 400);
+                // ===========================================
+                // 🍎 iOS MINI APP — composeCast is BROKEN
+                // FIX → close Mini App → open web composer
+                // ===========================================
+                if (platform.isIOS && platform.isMiniApp) {
+                  await sdk?.close?.();
 
-              } catch (err) {
+                  setTimeout(() => {
+                    window.location.href = WEB_COMPOSER;
+                  }, 350);
+
+                  return;
+                }
+
+                // ===========================================
+                // 🖥 WEB OR OTHER — NEW TAB COMPOSER
+                // ===========================================
+                const opened = window.open(WEB_COMPOSER, "_blank");
+                if (!opened) window.location.href = WEB_COMPOSER;
+
+              } catch (err: any) {
                 alert("❌ ERROR: " + err?.message);
               }
             });
           }
+
         } catch (err) {
-          console.error("💥 Farcaster share init failed:", err);
+          console.error("CAST INIT ERROR:", err);
         }
 
       } catch (err: any) {
@@ -709,47 +739,26 @@ export default function SolitaireGame({
         }
       });
     }
-
+    
 // ==================================================
-// 🧪 TEST BUTTON — DIRECT CAST COMPOSER (NO DM BUG)
+// 🧪 TEST WEB SHARE (Browser Only)
 // ==================================================
     try {
-      const sdkRef = (window as any).sdk || (window as any).farcaster;
-
-      const btn = document.getElementById("test-cast-btn");
+      const btn = document.getElementById("test-web-share-btn");
       if (btn && !(btn as any)._bound) {
 
         (btn as any)._bound = true;
 
-        btn.addEventListener("click", async () => {
-          try {
+        btn.addEventListener("click", () => {
+          const testText = "🧪 Web Composer Test!";
+          const url = "https://warpcast.com/~/compose?text=" + encodeURIComponent(testText);
 
-            alert("Opening Cast Composer…");
-
-            // Cast içine yazılacak örnek text
-            const testText =
-                "🧪 Test cast from Solitaire MiniApp!\n" +
-                "If you see this, it correctly opened the CAST composer.";
-
-            // ✔ TEK GARANTİLİ CAST COMPOSER DEEP LINK
-            const deepLink =
-                "farcaster://casts/add?text=" + encodeURIComponent(testText);
-
-            // ⭐ Deep linki TETİKLE
-            window.location.href = deepLink;
-
-            // ⭐ MiniApp'i arkadan kapat (opsiyonel ama daha stabil)
-            setTimeout(() => {
-              sdkRef?.close?.();
-            }, 500);
-
-          } catch (err) {
-            alert("❌ ERROR: " + err?.message);
-          }
+          const opened = window.open(url, "_blank");
+          if (!opened) window.location.href = url;
         });
       }
     } catch (err) {
-      console.error("💥 Test cast init failed:", err);
+      console.error("WEB TEST ERROR:", err);
     }
 
     // --- TOUCH BINDER ---
@@ -831,22 +840,11 @@ export default function SolitaireGame({
   } catch {
     // web ortamında hata verirse sessiz geç
   }
-  
+
   return (
       <>
-        <button
-            id="test-cast-btn"
-            style={{
-              padding: "12px",
-              background: "#5a3efc",
-              color: "white",
-              borderRadius: "8px",
-              fontSize: "16px",
-              marginBottom: "12px",
-            }}
-        >
-          Test Cast
-        </button>
+        <button id="test-web-share-btn" className="control-btn">🧪 Test Web Share</button>
+        <button id="test-mobile-share-btn" className="control-btn">📱 Test Mobile Share</button>
         <div className="game-container" id="game-container">
           <h1>Solitaire</h1>
           <div className="score-display">Score: 0</div>
