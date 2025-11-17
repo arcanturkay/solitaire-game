@@ -674,8 +674,7 @@ export default function SolitaireGame({
         resetGame();
         setTimeout(attachTouchHandlers, 100);
       });
-    });
-    setupTestShare();   // 👈 buraya ekle
+    });// 👈 buraya ekle
     // İlk oyun
     resetGame();
     setTimeout(attachTouchHandlers, 100);
@@ -741,55 +740,52 @@ export default function SolitaireGame({
         }
       });
     }
-    function setupTestShare() {
-      const sdkRef = (window as any).farcaster || (window as any).sdk;
-      const btn = document.getElementById("test-share-btn");
-      if (!btn || (btn as any)._bound) return;
 
-      (btn as any)._bound = true;
+    async function shareOnFarcaster(text) {
+      try {
+        const sdk = (window["farcaster"] || window["sdk"] || null);
+        const deepLink = "https://warpcast.com/~/compose?text=" + encodeURIComponent(text);
 
-      const ua = navigator.userAgent || "";
-      const isIOS = /iPhone|iPad|iPod/.test(ua);
-      const isAndroid = /Android/.test(ua);
-      const isMiniApp = !!sdkRef?.actions;
+        const ua = navigator.userAgent || "";
+        const isIOS = /iPhone|iPad|iPod/.test(ua);
+        const isAndroid = /Android/.test(ua);
 
-      btn.addEventListener("click", async () => {
-        try {
-          alert("🧪 TEST START");
-
-          const text = "🧪 Test cast from Solitaire Mini App!";
-          const WEB_COMPOSER =
-              "https://warpcast.com/~/compose?text=" + encodeURIComponent(text);
-
-          // ANDROID → composeCast sağlam
-          if (isAndroid && isMiniApp && sdkRef?.actions?.composeCast) {
-            alert("ANDROID → composeCast()");
-            await sdkRef.actions.composeCast({ text });
-            return;
-          }
-
-          // iOS Mini App
-          if (isIOS && isMiniApp) {
-            alert("iOS → closing MiniApp first");
-
-            await sdkRef?.close?.();
-
-            setTimeout(() => {
-              window.location.href = WEB_COMPOSER;
-            }, 500); // 👈 daha stabil
-
-            return;
-          }
-
-          // Web fallback
-          const opened = window.open(WEB_COMPOSER, "_blank");
-          if (!opened) window.location.href = WEB_COMPOSER;
-
-        } catch (err: any) {
-          alert("❌ TEST ERROR: " + err?.message);
+        // 1) GERÇEK MiniApp + Android → en temiz yol
+        if (isAndroid && sdk?.actions?.composeCast) {
+          console.log("ANDROID → composeCast");
+          await sdk.actions.composeCast({ text });
+          return true;
         }
-      });
+
+        // 2) iOS Mini App kullanıcıları → openUrl çalışıyor
+        if (isIOS && sdk?.openUrl) {
+          console.log("iOS → openUrl fallback");
+          await sdk.openUrl(deepLink);
+          return true;
+        }
+
+        // 3) composeCast bazı iOS sürümlerinde (şanslı isen)
+        if (sdk?.actions?.composeCast) {
+          console.log("GENERIC → composeCast");
+          await sdk.actions.composeCast({ text });
+          return true;
+        }
+
+        // 4) TARAYICI veya fallback
+        console.log("WEB → window.location");
+        window.location.href = deepLink;
+        return true;
+
+      } catch (e) {
+        console.error("Share error:", e);
+        return false;
+      }
     }
+
+    document.getElementById("test-share-btn").addEventListener("click", async () => {
+      await shareOnFarcaster("🃏 Solitaire denemesi — yeni bir skor aldım!");
+    });
+
     // --- TOUCH BINDER ---
     function attachTouchHandlers() {
       // placeholder’lara tık/touch
