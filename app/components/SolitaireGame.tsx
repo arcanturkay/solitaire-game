@@ -542,8 +542,8 @@ export default function SolitaireGame({
           }).catch(() => {});
         }
 
-// ------------------------------------------------------
-// 🌀 SHARE BUTTON — SIMPLE & SAFE (Guaranteed Works)
+/// ------------------------------------------------------
+// 🌀 SHARE BUTTON — SAFE FULL VERSION (FIXED)
 // ------------------------------------------------------
         const shareBtn = document.getElementById("share-on-farcaster-btn");
 
@@ -552,16 +552,47 @@ export default function SolitaireGame({
 
           shareBtn.addEventListener("click", async () => {
             try {
-              const MESSAGE = `I just played Solitaire! 🃏`;
-              await shareToCast(MESSAGE);   // SADECE TEXT
+              const sdkRef: any =
+                  (window as any).farcaster ||
+                  (window as any).sdk ||
+                  (sdk as any);
+
+              // --- SAFE STRING HELPERS ---
+              const safe = (v: any) => (v === undefined || v === null) ? "" : String(v);
+
+              // Username
+              const username = sdkRef?.context?.user?.username
+                  ? "@" + safe(sdkRef.context.user.username)
+                  : safe(displayName) || "someone";
+
+              // Score comment
+              let scoreComment = "🎮 Nice clean run!";
+              if (score >= 150) scoreComment = "🔥 Insane run!";
+              else if (score >= 130) scoreComment = "⚡ Cracked!";
+              else if (score >= 100) scoreComment = "💫 Smooth win!";
+
+              scoreComment = safe(scoreComment);
+
+              // TX link (optional)
+              const txLink = txHash
+                  ? `\n🧾 On-chain score: https://basescan.org/tx/${safe(txHash)}`
+                  : "";
+
+              // FINAL CAST TEXT (all safe)
+              const castText =
+                  `♠️♦️ ${safe(username)} cleared a Solitaire run!\n` +
+                  `Score: ${safe(score)} pts — ${scoreComment}\n` +
+                  `${txLink}\n\n` +
+                  `Play it 👇\nhttps://farcaster.xyz/miniapps/-2zKveTkHy61/solitaire`;
+
+              await shareToCast(castText);
+
             } catch (err: any) {
               alert("❌ Share failed: " + (err?.message || String(err)));
               console.error(err);
             }
           });
         }
-
-
       } catch (err: any) {
         console.error("❌ recordMyWin failed:", err);
         const div = document.getElementById("onchain-confirm");
