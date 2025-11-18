@@ -543,7 +543,7 @@ export default function SolitaireGame({
         }
 
 // ------------------------------------------------------
-// 🌀 SHARE BUTTON — iOS + Android + Web  (FINAL FIXED)
+// 🌀 SHARE BUTTON — SIMPLE & SAFE (Guaranteed Works)
 // ------------------------------------------------------
         const shareBtn = document.getElementById("share-on-farcaster-btn");
 
@@ -552,48 +552,15 @@ export default function SolitaireGame({
 
           shareBtn.addEventListener("click", async () => {
             try {
-              const sdkRef: any =
-                  (window as any).farcaster ||
-                  (window as any).sdk ||
-                  (typeof sdk !== "undefined" ? sdk : null);
-
-              // ---- SAFE USERNAME ----
-              const usernameRaw =
-                  sdkRef?.context?.user?.username ||
-                  displayName ||
-                  "Someone";
-
-              const username = String(usernameRaw); // <— EN ÖNEMLİ FIX
-
-              // ---- SAFE SCORE COMMENT ----
-              let scoreComment = "🎮 Nice clean run!";
-              if (score >= 150) scoreComment = "🔥 Insane run!";
-              else if (score >= 130) scoreComment = "⚡ Cracked!";
-              else if (score >= 100) scoreComment = "💫 Smooth win!";
-
-              // ---- SAFE TX LINK ----
-              const txLink =
-                  typeof txHash === "string" && txHash.length > 5
-                      ? `\n🧾 On-chain score: https://basescan.org/tx/${encodeURIComponent(txHash)}`
-                      : "";
-
-              // ---- SHARE TEXT (tamamen saf string) ----
-              const castText =
-                  `♠️♦️ ${username} just cleared a Solitaire run!\n` +
-                  `Score: ${Number(score)} pts — ${scoreComment}\n` +   // <— Number() safety
-                  `${String(txLink)}\n\n` +                             // <— String() safety
-                  `Play it 👇\nhttps://farcaster.xyz/miniapps/-2zKveTkHy61/solitaire`;
-
-              console.log("FINAL SHARE TEXT:", castText);
-
-              await shareToCast(castText);
-
+              const MESSAGE = `I just played Solitaire! 🃏`;
+              await shareToCast(MESSAGE);   // SADECE TEXT
             } catch (err: any) {
-              console.error("SHARE ERROR:", err);
               alert("❌ Share failed: " + (err?.message || String(err)));
+              console.error(err);
             }
           });
         }
+
 
       } catch (err: any) {
         console.error("❌ recordMyWin failed:", err);
