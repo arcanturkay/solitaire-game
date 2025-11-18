@@ -71,6 +71,7 @@ export default function SolitaireGame({
         return false;
       }
     }
+
     // --- CONSTS & DOM ---
     const DOMAIN_TAG = window.location.hostname.replace(/\./g, '_');
     const SCORE_TOTALS_KEY = `solitaireAccumulatedScores_${DOMAIN_TAG}`;
