@@ -28,55 +28,48 @@ export default function SolitaireGame({
 
 }) {
   useEffect(() => {
-    // ===============================
-// 🌀 UNIVERSAL SHARE FUNCTION
+    // 🌀 UNIVERSAL SHARE FUNCTION
 // iOS + Android + Web (MiniApp öncelikli)
-// ===============================
     async function shareToCast(text: string): Promise<boolean> {
-      const embedUrl = "https://farcaster.xyz/miniapps/-2zKveTkHy61/solitaire";
-      const encodedText = encodeURIComponent(text);
-      const encodedEmbed = encodeURIComponent(embedUrl);
+      try {
+        const embedUrl = "https://farcaster.xyz/miniapps/-2zKveTkHy61/solitaire";
 
-      // Classic compose URL (fallback için)
-      const composeUrl =
-          `https://warpcast.com/~/compose?text=${encodedText}&embeds[]=${encodedEmbed}`;
+        const encodedText = encodeURIComponent(text);
+        const encodedEmbed = encodeURIComponent(embedUrl);
 
-      const sdkRef: any =
-          (window as any).farcaster ||
-          (window as any).sdk ||
-          (sdk as any);
+        const composeUrl =
+            `https://warpcast.com/~/compose?text=${encodedText}&embeds[]=${encodedEmbed}`;
 
-      const hasSdk = !!sdkRef?.actions;
+        const sdkRef: any =
+            (window as any).farcaster ||
+            (window as any).sdk ||
+            (typeof sdk !== "undefined" ? sdk : null);
 
-      // 1) TERCIH EDİLEN YOL → MiniApp composer (Farcaster içi)
-      if (hasSdk && sdkRef.actions.openComposer) {
-        try {
+        // 1) MiniApp openComposer (en doğru yol)
+        if (sdkRef?.actions?.openComposer) {
           await sdkRef.actions.openComposer({
             text,
             embeds: [embedUrl],
           });
           return true;
-        } catch (err) {
-          console.warn("openComposer failed → fallback openUrl", err);
         }
-      }
 
-      // 2) SDK varsa ama openComposer yok → openUrl ile compose ekranı
-      if (hasSdk && sdkRef.actions.openUrl) {
-        try {
-          await sdkRef.actions.openUrl(composeUrl);
+        // 2) MiniApp openUrl → DÜZGÜN FORMAT ŞART!
+        if (sdkRef?.actions?.openUrl) {
+          await sdkRef.actions.openUrl({ url: composeUrl }); // ← doğru kullanım
           return true;
-        } catch (err) {
-          console.warn("sdk.actions.openUrl failed → fallback window.open", err);
         }
-      }
 
-      // 3) Web / dış ortam fallback
-      const opened = window.open(composeUrl, "_blank");
-      if (!opened) {
-        window.location.href = composeUrl;
+        // 3) Web fallback
+        const opened = window.open(composeUrl, "_blank");
+        if (!opened) window.location.href = composeUrl;
+        return true;
+
+      } catch (err) {
+        console.error("❌ Share failed:", err);
+        alert("Share failed: " + (err?.message || err));
+        return false;
       }
-      return true;
     }
     // --- CONSTS & DOM ---
     const DOMAIN_TAG = window.location.hostname.replace(/\./g, '_');
