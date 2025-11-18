@@ -6,6 +6,13 @@ import { ethers } from "ethers";
 import { CHECKIN_CONTRACT, CHECKIN_ABI } from "@/app/lib/contract";
 import { sdk } from '@farcaster/miniapp-sdk';
 
+// TypeScript'e farcaster ve sdk'nın window içinde olduğunu öğret
+declare global {
+  interface Window {
+    farcaster?: any;
+    sdk?: any;
+  }
+}
 interface Card {
   suit: string; rank: string; color: 'red' | 'black'; value: number; isFaceUp: boolean;
 }
@@ -22,6 +29,50 @@ export default function SolitaireGame({
 }) {
   useEffect(() => {
 
+    // =======================================================
+// 🌀 UNIVERSAL SHARE FUNCTION FOR SOLITAIRE (iOS + ANDROID + WEB)
+// =======================================================
+    async function shareToCast(text) {
+      const encodedText = encodeURIComponent(text);
+
+      // İstersen kendi embed URL'ini buraya koy
+      const embedUrl = encodeURIComponent("https://farcaster.xyz/miniapps/-2zKveTkHy61/solitaire");
+
+      const composeUrl =
+          `https://warpcast.com/~/compose?text=${encodedText}&embeds[]=${embedUrl}`;
+
+      const sdkRef = (window.farcaster || window.sdk);
+
+      // ----- 1) ANDROID MINI APP → composeCast çalışır -----
+      if (sdkRef?.actions?.composeCast) {
+        try {
+          await sdkRef.actions.composeCast({
+            text,
+            embeds: ["https://farcaster.xyz/miniapps/-2zKveTkHy61/solitaire"]
+          });
+          return true;
+        } catch (err) {
+          console.warn("composeCast failed → fallback openUrl", err);
+        }
+      }
+
+      // ----- 2) iOS MINI APP → openUrl çalışır -----
+      if (sdkRef?.actions?.openUrl || sdkRef?.openUrl) {
+        try {
+          await (sdkRef.actions?.openUrl || sdkRef.openUrl)({
+            url: composeUrl,
+          });
+          return true;
+        } catch (err) {
+          console.warn("openUrl failed → fallback window", err);
+        }
+      }
+
+      // ----- 3) WEB fallback -----
+      const opened = window.open(composeUrl, "_blank");
+      if (!opened) window.location.href = composeUrl;
+      return true;
+    }
     // --- CONSTS & DOM ---
     const DOMAIN_TAG = window.location.hostname.replace(/\./g, '_');
     const SCORE_TOTALS_KEY = `solitaireAccumulatedScores_${DOMAIN_TAG}`;
@@ -480,6 +531,44 @@ export default function SolitaireGame({
             body: JSON.stringify({ playerAddress: toAddr, score, displayName }),
           }).catch(() => {});
         }
+        // ------------------------------------------------------
+// 🌀 SHARE BUTTON — works iOS + Android + Web
+// ------------------------------------------------------
+        const shareBtn = document.getElementById("share-on-farcaster-btn");
+        if (shareBtn && !(shareBtn as any)._bound) {
+          (shareBtn as any)._bound = true;
+
+          shareBtn.addEventListener("click", async () => {
+            try {
+              const sdkRef = window.farcaster || window.sdk;
+              const username = sdkRef?.context?.user?.username
+                  ? `@${sdkRef.context.user.username}`
+                  : "Someone";
+
+              let scoreComment =
+                  score >= 150 ? "🔥 Insane run!" :
+                      score >= 130 ? "⚡ Cracked!" :
+                          score >= 100 ? "💫 Smooth win!" :
+                              "🎮 Nice clean run!";
+
+              const txLink = txHash
+                  ? `\n🧾 On-chain score: https://basescan.org/tx/${txHash}`
+                  : "";
+
+              const castText =
+                  `♠️♦️ ${username} just cleared a Solitaire run!\n` +
+                  `Score: ${score} pts — ${scoreComment}\n` +
+                  `${txLink}\n\n` +
+                  `Play it 👇\nhttps://farcaster.xyz/miniapps/-2zKveTkHy61/solitaire`;
+
+              await shareToCast(castText);
+
+            } catch (err) {
+              alert("❌ Share failed: " + err?.message);
+              console.error(err);
+            }
+          });
+        }
 
         function detectPlatform() {
           const ua = navigator.userAgent || "";
@@ -491,57 +580,7 @@ export default function SolitaireGame({
             isMiniApp: !!((window as any).farcaster?.actions)
           };
         }
-/// ==================================================
-/// SIMPLE & STABLE WEB SHARE ONLY
-/// ==================================================
-        try {
-          const sdk = (window as any).farcaster || (window as any).sdk;
 
-          const shareBtn = document.getElementById("share-on-farcaster-btn");
-          if (shareBtn && !(shareBtn as any)._bound) {
-
-            (shareBtn as any)._bound = true;
-
-            shareBtn.addEventListener("click", async () => {
-              try {
-                const username = sdk?.context?.user?.username
-                    ? `@${sdk.context.user.username}`
-                    : "I";
-
-                let scoreComment = "";
-                if (score >= 150) scoreComment = "🔥 Insane run!";
-                else if (score >= 130) scoreComment = "⚡ Cracked performance!";
-                else if (score >= 100) scoreComment = "💫 Smooth win!";
-                else scoreComment = "🎮 Nice clean run!";
-
-                const txLink = txHash
-                    ? `\n🧾 On-chain score: https://basescan.org/tx/${txHash}\n`
-                    : "\n";
-
-                const text =
-                    `♦️ ♥️ ♠️ ♣️  ${username} cleared a Solitaire run!\n` +
-                    `🍀 Score: ${score} — ${scoreComment}\n` +
-                    txLink +
-                    `\nPlay 👇\nhttps://farcaster.xyz/miniapps/-2zKveTkHy61/solitaire`;
-
-                const WEB_COMPOSER =
-                    "https://warpcast.com/~/compose?text=" + encodeURIComponent(text);
-
-                // =======================================================
-                // 🌐 WEB → NEW TAB (FALLBACK)
-                // =======================================================
-                const opened = window.open(WEB_COMPOSER, "_blank");
-                if (!opened) window.location.href = WEB_COMPOSER;
-
-              } catch (err: any) {
-                alert("❌ ERROR: " + err?.message);
-              }
-            });
-          }
-
-        } catch (err) {
-          console.error("CAST INIT ERROR:", err);
-        }
 
       } catch (err: any) {
         console.error("❌ recordMyWin failed:", err);
