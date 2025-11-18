@@ -542,50 +542,26 @@ export default function SolitaireGame({
           }).catch(() => {});
         }
 
-/// ------------------------------------------------------
-// 🌀 SHARE BUTTON — SAFE FULL VERSION (FIXED)
+// ------------------------------------------------------
+// SHARE BUTTON — Simple & Safe (same as Test Share)
 // ------------------------------------------------------
         const shareBtn = document.getElementById("share-on-farcaster-btn");
-
         if (shareBtn && !(shareBtn as any)._bound) {
           (shareBtn as any)._bound = true;
 
           shareBtn.addEventListener("click", async () => {
             try {
-              const sdkRef: any =
-                  (window as any).farcaster ||
-                  (window as any).sdk ||
-                  (sdk as any);
+              const text =
+                  "♠️♦️ I’m playing Solitaire Mini App on Base!\n\n" +
+                  "Play it here 👇\n" +
+                  "https://farcaster.xyz/miniapps/-2zKveTkHy61/solitaire";
 
-              // --- SAFE STRING HELPERS ---
-              const safe = (v: any) => (v === undefined || v === null) ? "" : String(v);
+              const ok = await shareToCast(text);
 
-              // Username
-              const username = sdkRef?.context?.user?.username
-                  ? "@" + safe(sdkRef.context.user.username)
-                  : safe(displayName) || "someone";
-
-              // Score comment
-              let scoreComment = "🎮 Nice clean run!";
-              if (score >= 150) scoreComment = "🔥 Insane run!";
-              else if (score >= 130) scoreComment = "⚡ Cracked!";
-              else if (score >= 100) scoreComment = "💫 Smooth win!";
-
-              scoreComment = safe(scoreComment);
-
-              // TX link (optional)
-              const txLink = txHash
-                  ? `\n🧾 On-chain score: https://basescan.org/tx/${safe(txHash)}`
-                  : "";
-
-              // FINAL CAST TEXT (all safe)
-              const castText =
-                  `♠️♦️ ${safe(username)} cleared a Solitaire run!\n` +
-                  `Score: ${safe(score)} pts — ${scoreComment}\n` +
-                  `${txLink}\n\n` +
-                  `Play it 👇\nhttps://farcaster.xyz/miniapps/-2zKveTkHy61/solitaire`;
-
-              await shareToCast(castText);
+              // Only give bonus if share opened successfully
+              if (ok) {
+                setScore(score + 20);   // ← SCORE SİSTEMİNLE UYUMLU
+              }
 
             } catch (err: any) {
               alert("❌ Share failed: " + (err?.message || String(err)));
@@ -593,6 +569,7 @@ export default function SolitaireGame({
             }
           });
         }
+
       } catch (err: any) {
         console.error("❌ recordMyWin failed:", err);
         const div = document.getElementById("onchain-confirm");
