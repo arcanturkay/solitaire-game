@@ -35,16 +35,24 @@ export default function SolitaireGame({
     async function shareToCast(text) {
       const encodedText = encodeURIComponent(text);
 
-      // İstersen kendi embed URL'ini buraya koy
-      const embedUrl = encodeURIComponent("https://farcaster.xyz/miniapps/-2zKveTkHy61/solitaire");
+      const embedUrl = encodeURIComponent(
+          "https://farcaster.xyz/miniapps/-2zKveTkHy61/solitaire"
+      );
 
       const composeUrl =
           `https://warpcast.com/~/compose?text=${encodedText}&embeds[]=${embedUrl}`;
 
       const sdkRef = (window.farcaster || window.sdk);
 
-      // ----- 1) ANDROID MINI APP → composeCast çalışır -----
-      if (sdkRef?.actions?.composeCast) {
+      const ua = navigator.userAgent || "";
+      const isIOS = /iPhone|iPad|iPod/.test(ua);
+      const isAndroid = /Android/.test(ua);
+      const isMiniApp = !!sdkRef?.actions;
+
+      // =========================================================
+      // 1) ANDROID MINIAPP → composeCast ÇALIŞIR  🚀 (En iyi senaryo)
+      // =========================================================
+      if (isAndroid && isMiniApp && sdkRef?.actions?.composeCast) {
         try {
           await sdkRef.actions.composeCast({
             text,
@@ -52,11 +60,25 @@ export default function SolitaireGame({
           });
           return true;
         } catch (err) {
-          console.warn("composeCast failed → fallback openUrl", err);
+          console.warn("Android composeCast fail → fallback openUrl", err);
         }
       }
 
-      // ----- 2) iOS MINI APP → openUrl çalışır -----
+      // =========================================================
+      // 2) iOS MINIAPP → SAFE WEB COMPOSER MODE  🍏
+      //    (AppStore açmaz, deep link açmaz — garantili çalışır)
+      // =========================================================
+      if (isIOS && isMiniApp) {
+        console.log("iOS MiniApp → SAFE WEB COMPOSER");
+
+        // ❗ iOS'ta deep link YASAK → direkt web composer aç
+        window.location.href = composeUrl;
+        return true;
+      }
+
+      // =========================================================
+      // 3) WEB / Normal Browser
+      // =========================================================
       if (sdkRef?.actions?.openUrl || sdkRef?.openUrl) {
         try {
           await (sdkRef.actions?.openUrl || sdkRef.openUrl)({
@@ -68,7 +90,6 @@ export default function SolitaireGame({
         }
       }
 
-      // ----- 3) WEB fallback -----
       const opened = window.open(composeUrl, "_blank");
       if (!opened) window.location.href = composeUrl;
       return true;
@@ -755,7 +776,27 @@ export default function SolitaireGame({
         }
       });
     }
-    /* global window, farcaster, sdk, neynar */
+
+    // ================================
+// 🧪 TEST SHARE BUTTON (Manual Trigger)
+// ================================
+    const testShareBtn = document.getElementById("test-share-btn");
+    if (testShareBtn && !(testShareBtn as any)._bound) {
+      (testShareBtn as any)._bound = true;
+
+      testShareBtn.addEventListener("click", async () => {
+        try {
+          const sampleText =
+              "🧪 Test cast from Solitaire Mini App!\nIf this opens the composer, share flow works.";
+
+          await shareToCast(sampleText);
+        } catch (err) {
+          alert("❌ TEST SHARE ERROR: " + err?.message);
+          console.error(err);
+        }
+      });
+    }
+
 
     function log(msg) {
       const el = document.getElementById("share-log");
@@ -899,8 +940,10 @@ export default function SolitaireGame({
           <div className="controls">
             <button className="new-game-btn">♻️ New Game</button>
             <button id="test-tx-btn" className="control-btn">🧪 Test Onchain TX</button>
+            <button id="test-share-btn" className="control-btn alt">🧪 Test Share</button>
           </div>
         </div>
+
 
         {/* 🏅 Win Modal */}
         <div id="win-modal" className="modal-overlay">
