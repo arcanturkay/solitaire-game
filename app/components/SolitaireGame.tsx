@@ -28,55 +28,54 @@ export default function SolitaireGame({
 
 }) {
   useEffect(() => {
-    // =======================================================
-    // 🌀 UNIVERSAL SHARE FUNCTION (iOS + Android + Web)
-    // =======================================================
-    async function shareToCast(text) {
+    // ===============================
+// 🌀 UNIVERSAL SHARE FUNCTION
+// iOS + Android + Web (MiniApp öncelikli)
+// ===============================
+    async function shareToCast(text: string): Promise<boolean> {
+      const embedUrl = "https://farcaster.xyz/miniapps/-2zKveTkHy61/solitaire";
       const encodedText = encodeURIComponent(text);
-      const embedUrl = encodeURIComponent("https://solitaire-frame.vercel.app");
+      const encodedEmbed = encodeURIComponent(embedUrl);
 
-      const composeUrl = `https://warpcast.com/~/compose?text=${encodedText}&embeds[]=${embedUrl}`;
+      // Classic compose URL (fallback için)
+      const composeUrl =
+          `https://warpcast.com/~/compose?text=${encodedText}&embeds[]=${encodedEmbed}`;
 
-      const sdkRef = (window.farcaster || window.sdk);
-      const ua = navigator.userAgent || "";
+      const sdkRef: any =
+          (window as any).farcaster ||
+          (window as any).sdk ||
+          (sdk as any);
 
-      const isIOS = /iPhone|iPad|iPod/.test(ua);
-      const isAndroid = /Android/.test(ua);
-      const isMiniApp = !!sdkRef?.actions;
+      const hasSdk = !!sdkRef?.actions;
 
-      // ANDROID → composeCast
-      if (isAndroid && isMiniApp && sdkRef?.actions?.composeCast) {
+      // 1) TERCIH EDİLEN YOL → MiniApp composer (Farcaster içi)
+      if (hasSdk && sdkRef.actions.openComposer) {
         try {
-          await sdkRef.actions.composeCast({
+          await sdkRef.actions.openComposer({
             text,
-            embeds: ["https://solitaire-frame.vercel.app"]
+            embeds: [embedUrl],
           });
           return true;
         } catch (err) {
-          console.warn("Android composeCast fail → fallback", err);
+          console.warn("openComposer failed → fallback openUrl", err);
         }
       }
 
-      // iOS Mini App → direkt Web composer (tek çalışan yöntem)
-      if (isIOS && isMiniApp) {
-        window.location.href = composeUrl;
-        return true;
-      }
-
-      // Web / normal browser
-      if (sdkRef?.actions?.openUrl) {
+      // 2) SDK varsa ama openComposer yok → openUrl ile compose ekranı
+      if (hasSdk && sdkRef.actions.openUrl) {
         try {
-          await sdkRef.actions.openUrl({ url: composeUrl });
+          await sdkRef.actions.openUrl(composeUrl);
           return true;
         } catch (err) {
-          console.warn("openUrl fail → fallback", err);
+          console.warn("sdk.actions.openUrl failed → fallback window.open", err);
         }
       }
 
-      // Fallback
+      // 3) Web / dış ortam fallback
       const opened = window.open(composeUrl, "_blank");
-      if (!opened) window.location.href = composeUrl;
-
+      if (!opened) {
+        window.location.href = composeUrl;
+      }
       return true;
     }
     // --- CONSTS & DOM ---
@@ -538,31 +537,56 @@ export default function SolitaireGame({
           }).catch(() => {});
         }
         // ------------------------------------------------------
-// 🌀 SHARE BUTTON — iOS + Android + Web universal
+// ==================================================
+// 📡 BACKEND UPDATE
+// ==================================================
+        if (toAddr) {
+          fetch("/api/recordwin", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ playerAddress: toAddr, score, displayName }),
+          }).catch(() => {});
+        }
+
+// ------------------------------------------------------
+// 🌀 SHARE BUTTON — iOS + Android + Web
 // ------------------------------------------------------
         const shareBtn = document.getElementById("share-on-farcaster-btn");
-
         if (shareBtn && !(shareBtn as any)._bound) {
           (shareBtn as any)._bound = true;
 
           shareBtn.addEventListener("click", async () => {
-            const sdkRef = (window as any).farcaster || (window as any).sdk;
+            try {
+              const sdkRef: any =
+                  (window as any).farcaster ||
+                  (window as any).sdk ||
+                  (sdk as any);
 
-            const username = sdkRef?.context?.user?.username
-                ? `@${sdkRef.context.user.username}`
-                : "Someone";
+              const username = sdkRef?.context?.user?.username
+                  ? `@${sdkRef.context.user.username}`
+                  : (displayName || "Someone");
 
-            const txLine = txHash
-                ? `🧾 https://basescan.org/tx/${txHash}\n`
-                : "";
+              let scoreComment =
+                  score >= 150 ? "🔥 Insane run!" :
+                      score >= 130 ? "⚡ Cracked!" :
+                          score >= 100 ? "💫 Smooth win!" :
+                              "🎮 Nice clean run!";
 
-            const castText =
-                `♠️♦️ ${username} just cleared a Solitaire run!
-Score: ${score} pts
-${txLine}
-Play: https://solitaire-frame.vercel.app`;
+              const txLink = typeof txHash === "string" && txHash.length
+                  ? `\n🧾 On-chain score: https://basescan.org/tx/${txHash}`
+                  : "";
 
-            await shareToCast(castText);
+              const castText =
+                  `♠️♦️ ${username} just cleared a Solitaire run!\n` +
+                  `Score: ${score} pts — ${scoreComment}\n` +
+                  `${txLink}\n\n` +
+                  `Play it 👇\nhttps://farcaster.xyz/miniapps/-2zKveTkHy61/solitaire`;
+
+              await shareToCast(castText);
+            } catch (err: any) {
+              alert("❌ Share failed: " + (err?.message || String(err)));
+              console.error(err);
+            }
           });
         }
 
@@ -749,12 +773,11 @@ Play: https://solitaire-frame.vercel.app`;
       testShareBtn.addEventListener("click", async () => {
         try {
           const sampleText =
-              "🧪 Test cast from Solitaire Mini App!\nIf this opens Warpcast composer, share works.";
+              "🧪 Test cast from Solitaire Mini App!\nIf you see the composer, share flow is working.";
 
           await shareToCast(sampleText);
-
-        } catch (err) {
-          alert("❌ TEST SHARE ERROR: " + err?.message);
+        } catch (err: any) {
+          alert("❌ TEST SHARE ERROR: " + (err?.message || String(err)));
           console.error(err);
         }
       });
