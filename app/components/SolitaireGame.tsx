@@ -543,9 +543,10 @@ export default function SolitaireGame({
         }
 
 // ------------------------------------------------------
-// 🌀 SHARE BUTTON — iOS + Android + Web
+// 🌀 SHARE BUTTON — iOS + Android + Web  (FINAL FIXED)
 // ------------------------------------------------------
         const shareBtn = document.getElementById("share-on-farcaster-btn");
+
         if (shareBtn && !(shareBtn as any)._bound) {
           (shareBtn as any)._bound = true;
 
@@ -554,32 +555,42 @@ export default function SolitaireGame({
               const sdkRef: any =
                   (window as any).farcaster ||
                   (window as any).sdk ||
-                  (sdk as any);
+                  (typeof sdk !== "undefined" ? sdk : null);
 
-              const username = sdkRef?.context?.user?.username
-                  ? `@${sdkRef.context.user.username}`
-                  : (displayName || "Someone");
+              // ---- SAFE USERNAME ----
+              const usernameRaw =
+                  sdkRef?.context?.user?.username ||
+                  displayName ||
+                  "Someone";
 
-              let scoreComment =
-                  score >= 150 ? "🔥 Insane run!" :
-                      score >= 130 ? "⚡ Cracked!" :
-                          score >= 100 ? "💫 Smooth win!" :
-                              "🎮 Nice clean run!";
+              const username = String(usernameRaw); // <— EN ÖNEMLİ FIX
 
-              const txLink = typeof txHash === "string" && txHash.length
-                  ? `\n🧾 On-chain score: https://basescan.org/tx/${txHash}`
-                  : "";
+              // ---- SAFE SCORE COMMENT ----
+              let scoreComment = "🎮 Nice clean run!";
+              if (score >= 150) scoreComment = "🔥 Insane run!";
+              else if (score >= 130) scoreComment = "⚡ Cracked!";
+              else if (score >= 100) scoreComment = "💫 Smooth win!";
 
+              // ---- SAFE TX LINK ----
+              const txLink =
+                  typeof txHash === "string" && txHash.length > 5
+                      ? `\n🧾 On-chain score: https://basescan.org/tx/${encodeURIComponent(txHash)}`
+                      : "";
+
+              // ---- SHARE TEXT (tamamen saf string) ----
               const castText =
                   `♠️♦️ ${username} just cleared a Solitaire run!\n` +
-                  `Score: ${score} pts — ${scoreComment}\n` +
-                  `${txLink}\n\n` +
+                  `Score: ${Number(score)} pts — ${scoreComment}\n` +   // <— Number() safety
+                  `${String(txLink)}\n\n` +                             // <— String() safety
                   `Play it 👇\nhttps://farcaster.xyz/miniapps/-2zKveTkHy61/solitaire`;
 
+              console.log("FINAL SHARE TEXT:", castText);
+
               await shareToCast(castText);
+
             } catch (err: any) {
+              console.error("SHARE ERROR:", err);
               alert("❌ Share failed: " + (err?.message || String(err)));
-              console.error(err);
             }
           });
         }
