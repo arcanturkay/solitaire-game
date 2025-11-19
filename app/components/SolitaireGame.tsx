@@ -113,6 +113,30 @@ export default function SolitaireGame({
     let hasWon = false;
 
     // --- HELPERS ---
+    function getTotalScore(playerId: string): number {
+      const scores = JSON.parse(localStorage.getItem(SCORE_TOTALS_KEY) || "{}");
+      return scores[playerId] || 0;
+    }
+    function buildShareText(runScore: number, totalScore: number, txHash?: string | null) {
+      let scoreComment =
+          runScore >= 150 ? "🔥 insane run" :
+              runScore >= 130 ? "⚡ cracked performance" :
+                  runScore >= 100 ? "💫 smooth win" :
+                      "🎮 clean run";
+
+      const txLine = txHash
+          ? `\n🧾 On-chain: https://basescan.org/tx/${txHash}`
+          : "";
+
+      return (
+          `♠️♦️ I played Solitaire!\n` +
+          `Scored **${runScore} points** this round — ${scoreComment}\n` +
+          `Total score so far: **${totalScore}** 🏆\n` +
+          `${txLine}\n\n` +
+          `Play here 👇\n` +
+          `https://farcaster.xyz/miniapps/-2zKveTkHy61/solitaire`
+      );
+    }
     function setScore(v:number){ score = Math.max(0,v); (scoreDisplay as any).textContent = `Score: ${score}`; }
     function updateScore(d:number){ setScore(score + d); }
     function updatePlayerStatus(){ if(currentPlayerStatus) currentPlayerStatus.textContent = `Playing as: ${currentPlayerId}`; }
@@ -531,36 +555,26 @@ export default function SolitaireGame({
           }).catch(() => {});
         }
         // ------------------------------------------------------
-// ==================================================
-// 📡 BACKEND UPDATE
-// ==================================================
-        if (toAddr) {
-          fetch("/api/recordwin", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ playerAddress: toAddr, score, displayName }),
-          }).catch(() => {});
-        }
 
-// ------------------------------------------------------
-// SHARE BUTTON — Simple & Safe (same as Test Share)
-// ------------------------------------------------------
         const shareBtn = document.getElementById("share-on-farcaster-btn");
+
         if (shareBtn && !(shareBtn as any)._bound) {
           (shareBtn as any)._bound = true;
 
           shareBtn.addEventListener("click", async () => {
             try {
-              const text =
-                  "♠️♦️ I’m playing Solitaire Mini App on Base!\n\n" +
-                  "Play it here 👇\n" +
-                  "https://farcaster.xyz/miniapps/-2zKveTkHy61/solitaire";
+              const totalScore = getTotalScore(currentPlayerId);
 
-              const ok = await shareToCast(text);
+              const castText = buildShareText(
+                  score,        // Bu oyunda kazandığı puan
+                  totalScore,   // Toplam skor
+                  txHash        // Opsiyonel onchain tx
+              );
 
-              // Only give bonus if share opened successfully
+              const ok = await shareToCast(castText);
+
               if (ok) {
-                setScore(score + 20);   // ← SCORE SİSTEMİNLE UYUMLU
+                setScore(score + 20); // BONUS +20
               }
 
             } catch (err: any) {
@@ -744,27 +758,32 @@ export default function SolitaireGame({
     }
 
     // ================================
-// 🧪 TEST SHARE BUTTON
+// 🧪 ADVANCED TEST SHARE BUTTON
+// (Gerçek share butonuyla %100 aynı mantık)
 // ================================
     const testShareBtn = document.getElementById("test-share-btn");
+
     if (testShareBtn && !(testShareBtn as any)._bound) {
       (testShareBtn as any)._bound = true;
 
       testShareBtn.addEventListener("click", async () => {
         try {
-          const sampleText =
-              "🧪 Test cast from Solitaire Mini App!\nIf you see the composer, share flow is working.";
+          // 1) Test için sahte değerler kullanalım
+          const runScore = 87;               // istediğin anlık puanı yaz
+          const totalScore = 400;            // istediğin total puanı yaz
+          const fakeTx = null;               // istersen buraya bir tx hash yaz
 
-          await shareToCast(sampleText);
+          // 2) Oyun share text'i ile aynı text oluştur
+          const text = buildShareText(runScore, totalScore, fakeTx);
+
+          // 3) Aynı shareToCast fonksiyonunu çağır
+          await shareToCast(text);
+
         } catch (err: any) {
           alert("❌ TEST SHARE ERROR: " + (err?.message || String(err)));
           console.error(err);
         }
       });
-    }
-    function log(msg) {
-      const el = document.getElementById("share-log");
-      el.innerText += msg + "\n";
     }
 
 
